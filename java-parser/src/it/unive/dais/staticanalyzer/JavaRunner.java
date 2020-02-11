@@ -147,7 +147,7 @@ public class JavaRunner {
 		Option cfg = Option.builder("cfg").argName("cfg file").desc("Control flow graph output dot file").longOpt("controlflowgraph").hasArg(true).required(false).build();
 		Option output = Option.builder("o").argName("output file").desc("Output dot file containing analysis results").longOpt("output").hasArg(true).required(false).build();
 		Option domain = Option.builder("d").argName("abstract domain").desc("Abstract domain for the analysis").longOpt("domain").hasArg(true).required(true).build();
-		Option help = Option.builder("h").desc("Print this help").longOpt("domain").hasArg(false).required(false).build();
+		Option help = Option.builder("h").desc("Print this help").longOpt("help").hasArg(false).required(false).build();
 		return new Options().addOption(input).addOption(cfg).addOption(output).addOption(domain).addOption(help);
 	}
 	

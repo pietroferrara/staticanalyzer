@@ -15,10 +15,12 @@ import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
 public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extends FunctionalDomain<Statement, AbstractAnalysisState<T>, CFGAnalysisResults<T>> {
 	private CFG cfg;
+	AbstractAnalysisState<T> entryState;
 	
 	public CFGAnalysisResults(CFG cfg, AbstractAnalysisState<T> entryState) {
 		super(entryState);
 		this.cfg = cfg;
+		this.entryState = entryState;
 		function.put(cfg.getEntryPoint(), entryState);
 	}
 
@@ -62,9 +64,9 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 
 	private CFGAnalysisResults<T> computeNewPrestatesFromPostStates(Map<Statement, AbstractAnalysisState<T>> poststates) {
 		Map<Statement, AbstractAnalysisState<T>> newPrestates = new HashMap<>(); 
-		function.put(getCfg().getEntryPoint(), function.get(getCfg().getEntryPoint()));
+		function.put(getCfg().getEntryPoint(), entryState);
 		for(Statement st : getCfg().vertexSet()) {
-			AbstractAnalysisState<T> state = null;
+			AbstractAnalysisState<T> state = getCfg().getEntryPoint().equals(st) ? entryState : null;
 			for(DefaultWeightedEdge edge : this.getCfg().incomingEdgesOf(st)) {
 				Statement source = getCfg().getEdgeSource(edge);
 				AbstractAnalysisState<T> newState = poststates.get(source);
