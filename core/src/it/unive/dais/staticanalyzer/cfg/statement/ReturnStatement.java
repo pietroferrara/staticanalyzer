@@ -1,16 +1,17 @@
 package it.unive.dais.staticanalyzer.cfg.statement;
 
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
+import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 
-public class ReturnStatement implements Statement {
-	private Expression returnedExpression;
+public class ReturnStatement extends Assignment {
 
 	public ReturnStatement(Expression returnedExpression) {
-		this.returnedExpression = returnedExpression;
+		super(new VariableIdentifier("<ret>"), returnedExpression);
 	}
+	
 	@Override
 	public String toString() {
-		return "return "+ (returnedExpression!=null?returnedExpression.toString() : "")+";";
+		return "return "+ (super.getExpression()!=null?super.getExpression().toString() : "")+";";
 	}
 	
 	@Override

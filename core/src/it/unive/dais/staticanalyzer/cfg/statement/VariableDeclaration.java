@@ -13,6 +13,10 @@ public class VariableDeclaration implements ParsedBlock, Statement {
 		this.id = id;
 	}
 	
+	public VariableIdentifier getId() {
+		return id;
+	}
+
 	@Override
 	public String toString() {
 		return type.toString()+" "+id.toString();

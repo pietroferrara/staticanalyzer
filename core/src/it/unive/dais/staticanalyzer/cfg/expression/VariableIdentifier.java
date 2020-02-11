@@ -4,6 +4,9 @@ public class VariableIdentifier implements Expression {
 	
 	private final String id;
 
+	public String getName() {
+		return id;
+	}
 	public VariableIdentifier(String id) {
 		super();
 		this.id = id;

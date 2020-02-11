@@ -22,6 +22,7 @@ import it.unive.dais.staticanalyzer.cfg.expression.NumericalComparisonExpression
 import it.unive.dais.staticanalyzer.cfg.expression.StringConstant;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
+import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.ClassOrInterfaceTypeContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.ExpressionContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.FloatLiteralContext;
@@ -79,7 +80,7 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 		avoidArrays(ctx);
 		return new VariableIdentifier(ctx.IDENTIFIER().getText());
 	}
-	
+
 	@Override
 	public Expression visitExpression(ExpressionContext ctx) {
 		avoidArrays(ctx);
@@ -122,7 +123,7 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 			case ">>>=":
 			case "<<=":
 			case "%=": throw new UnsupportedOperationException("Assignment operator "+binaryOperator+" not yet supported");
-			case "=": return new Assignment(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)));
+			case "=": throw new UnsupportedOperationException("Assignment is not yet supported as an expression");
 			case "+":
 			case "-":
 			case "*":
@@ -142,6 +143,19 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 			case "!=": return new NumericalComparisonExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator);
 			case "&&":
 			case "||": return new BooleanExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator);	
+		}
+		throw new UnsupportedOperationException("Unsupported expression: "+ctx.getText());
+	}
+	
+	public Statement visitOnlyAssignmentInExpression(ExpressionContext ctx) {
+		avoidArrays(ctx);
+		String binaryOperator = ctx.bop.getText();
+		switch(binaryOperator) {
+			case "=":
+				Expression assignedVariable = this.visitExpression(ctx.expression(0));
+				if(assignedVariable instanceof VariableIdentifier)
+					return new Assignment((VariableIdentifier) assignedVariable, this.visitExpression(ctx.expression(1)));
+				else throw new UnsupportedOperationException("Assignment of "+assignedVariable+" (type "+assignedVariable.getClass().getTypeName()+") not yet supported");
 		}
 		throw new UnsupportedOperationException("Unsupported expression: "+ctx.getText());
 	}

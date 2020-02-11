@@ -87,7 +87,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 		
 		if(ctx.statementExpression!=null)
 			try {
-				return new CFG(GenericVisitor.instance.visitExpression(ctx.statementExpression));
+				return new CFG(GenericVisitor.instance.visitOnlyAssignmentInExpression(ctx.statementExpression));
 			} catch (ParsingException e) {
 				throw new UnsupportedOperationException("Parsing of assignment statement "+ctx.getText()+" failed");
 			}
