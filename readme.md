@@ -8,7 +8,9 @@ Import the projects in Eclipse, for each ivy.xml file in the main directory of a
 
 # Running the analysis
 
-Class JavaRunner in project java-parser runs the analysis on snippets of Java code. In particular, the input has to be a snippet of Java code between curly brackets.
+Class JavaRunner in project java-parser runs the analysis on snippets of Java code. It is needed to import and compile projects core and java-parser in order to run the analysis.
+
+The program under analysis has to be a snippet of Java code between curly brackets.
 
 ```java
 {
