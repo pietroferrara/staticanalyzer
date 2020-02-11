@@ -23,7 +23,6 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 	public CFG visitMethodBody(MethodBodyContext ctx) {
 		BlockContext block = ctx.block();
 		CFG result = new CFG();
-		System.out.println("\nBody:"+ctx.children);
 		for(BlockStatementContext child : block.blockStatement())
 			try {
 				result.append(this.visitBlockStatement(child), null);

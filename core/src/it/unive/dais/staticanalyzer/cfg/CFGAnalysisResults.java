@@ -52,7 +52,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	}
 	
 	private CFGAnalysisResults<T> singleIteration() {
-		Set<Statement> statements = cfg.vertexSet();
+		Set<Statement> statements = getCfg().vertexSet();
 		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();
 		for(Statement st : statements)
 			if(function.containsKey(st) && function.get(st) != null)
@@ -62,26 +62,31 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 
 	private CFGAnalysisResults<T> computeNewPrestatesFromPostStates(Map<Statement, AbstractAnalysisState<T>> poststates) {
 		Map<Statement, AbstractAnalysisState<T>> newPrestates = new HashMap<>(); 
-		function.put(cfg.getEntryPoint(), function.get(cfg.getEntryPoint()));
-		for(Statement st : cfg.vertexSet()) {
+		function.put(getCfg().getEntryPoint(), function.get(getCfg().getEntryPoint()));
+		for(Statement st : getCfg().vertexSet()) {
 			AbstractAnalysisState<T> state = null;
-			for(DefaultWeightedEdge edge : this.cfg.incomingEdgesOf(st)) {
-				Statement source = cfg.getEdgeSource(edge);
+			for(DefaultWeightedEdge edge : this.getCfg().incomingEdgesOf(st)) {
+				Statement source = getCfg().getEdgeSource(edge);
 				AbstractAnalysisState<T> newState = poststates.get(source);
 				if(newState!=null)
 					state = state==null ? newState : newState.lub(state);
 			}
 			newPrestates.put(st, state);
 		}
-		return new CFGAnalysisResults<T>(cfg, newPrestates);
+		return new CFGAnalysisResults<T>(getCfg(), newPrestates);
 	}
 
 
 	@Override
 	public CFGAnalysisResults<T> bottom() {
-		CFGAnalysisResults<T> result = new CFGAnalysisResults<T>(cfg, valueDomain);
+		CFGAnalysisResults<T> result = new CFGAnalysisResults<T>(getCfg(), valueDomain);
 		result.function = null;
 		return result;
+	}
+
+
+	public CFG getCfg() {
+		return cfg;
 	}
 
 }
