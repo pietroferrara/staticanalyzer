@@ -11,6 +11,15 @@ public class BinaryArithmeticExpression implements Expression {
 	}
 	@Override
 	public String toString() {
-		return left.toString()+" "+operator+right.toString();
+		return getLeft().toString()+" "+getOperator()+getRight().toString();
+	}
+	public String getOperator() {
+		return operator;
+	}
+	public Expression getLeft() {
+		return left;
+	}
+	public Expression getRight() {
+		return right;
 	}
 }

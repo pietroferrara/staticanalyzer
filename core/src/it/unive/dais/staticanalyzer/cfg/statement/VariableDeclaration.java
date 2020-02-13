@@ -19,11 +19,15 @@ public class VariableDeclaration implements ParsedBlock, Statement {
 
 	@Override
 	public String toString() {
-		return type.toString()+" "+id.toString();
+		return getType().toString()+" "+id.toString();
 	}
 	
 	@Override
 	public boolean isTerminatingStatement() {
 		return false;
+	}
+
+	public Type getType() {
+		return type;
 	}
 }

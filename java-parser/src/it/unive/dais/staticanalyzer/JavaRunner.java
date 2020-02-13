@@ -18,6 +18,8 @@ import org.jgrapht.io.IntegerComponentNameProvider;
 import org.jgrapht.io.StringComponentNameProvider;
 
 import it.unive.dais.staticanalyzer.abstractdomain.AbstractAnalysisState;
+import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron.NumericalDomain;
+import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Environment;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.IntegerNumericalConstantDomain;
 import it.unive.dais.staticanalyzer.cfg.CFG;
@@ -29,7 +31,7 @@ import it.unive.dais.staticanalyzer.parser.java.BodyParser;
 
 public class JavaRunner {
 
-	public static void main(String[] args) throws ParseException, IOException {
+	public static void main(String[] args) throws IOException {
 		CommandLineParser parser = new DefaultParser();
 		try {
 			CommandLine cmd = parser.parse(getOptions(), args);
@@ -43,7 +45,7 @@ public class JavaRunner {
 		}
 	}
 	
-	private static void runAnalysis(it.unive.dais.staticanalyzer.Options clIoptionsToStructuredOptions) throws IOException {
+	private static void runAnalysis(it.unive.dais.staticanalyzer.Options clIoptionsToStructuredOptions) throws IOException, ParseException {
 		FileInputStream stream = new FileInputStream(clIoptionsToStructuredOptions.getInput());
 		CFG cfg = new BodyParser(stream).parse();
 		String cfgOutput = clIoptionsToStructuredOptions.getCfg();
@@ -99,9 +101,20 @@ public class JavaRunner {
 		
 	}
 
-	private static AbstractAnalysisState getAbstractState(String domain) {
-		switch(domain) {
-			case "IntegerNumericalConstantDomain": return new AbstractAnalysisState(null, new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom()));
+	private static AbstractAnalysisState getAbstractState(String domain) throws ParseException {
+		String[] params = domain.split(":");
+		switch(params[0]) {
+			case "IntegerNumericalConstantDomain": return new AbstractAnalysisState<>(null, new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom()));
+			case "Apron": 
+				if(params.length==1)
+					throw new ParseException("Domain Apron needs the numerical domain, syntax -d Apron:<numerical_domain>");
+				try {
+					Apron.setManager(NumericalDomain.valueOf(params[1]));
+					return new AbstractAnalysisState<Apron>(null, new Apron());
+				}
+				catch(IllegalArgumentException e) {
+					throw new ParseException("Numerical domain "+params[1]+" not supported by Apron. Apron supports the following domains: "+NumericalDomain.values());
+				}
 			default: throw new UnsupportedOperationException("Domain "+domain+" not supported");
 		}
 	}
@@ -118,7 +131,6 @@ public class JavaRunner {
 						try {
 							b = CFG.getBooleanFromWeight(cfg.getEdgeWeight(component));
 						} catch (ParsingException e) {
-							// TODO Auto-generated catch block
 							return "<error>";
 						}
 						if(b==null) return "";

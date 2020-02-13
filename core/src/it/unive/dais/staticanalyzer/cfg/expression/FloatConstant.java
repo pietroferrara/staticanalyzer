@@ -7,6 +7,9 @@ public class FloatConstant implements Constant {
 	}
 	@Override
 	public String toString() {
-		return String.valueOf(value);
+		return String.valueOf(getValue());
+	}
+	public double getValue() {
+		return value;
 	}
 }
