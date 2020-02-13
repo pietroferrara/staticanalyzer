@@ -110,7 +110,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 					result.addAndCheckEdge(lastAfterThen, joinStatement, null);
 				return result;
 			} catch (ParsingException e) {
-				throw new UnsupportedOperationException("Parsing of if statement "+ctx.getText()+" failed");
+				throw new UnsupportedOperationException("Parsing of if statement "+ctx.getText()+" failed", e);
 			}
 		}
 

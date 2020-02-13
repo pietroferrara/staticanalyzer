@@ -4,6 +4,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
+import java.util.logging.Logger;
 
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -17,6 +18,7 @@ import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extends FunctionalDomain<Statement, AbstractAnalysisState<T>, CFGAnalysisResults<T>> {
 	private CFG cfg;
 	AbstractAnalysisState<T> entryState;
+	final static Logger logger = Logger.getLogger(CFGAnalysisResults.class.getName());
 	
 	public CFGAnalysisResults(CFG cfg, AbstractAnalysisState<T> entryState) {
 		super(entryState);
@@ -43,12 +45,14 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	public static <T extends SemanticDomain<T> & Lattice<T>> CFGAnalysisResults<T> computeFixpoint(CFG cfg, AbstractAnalysisState<T> entryState) {
 		CFGAnalysisResults<T> prevIteration = new CFGAnalysisResults<T>(cfg, entryState).singleIteration();
 		CFGAnalysisResults<T> nextIteration = prevIteration.singleIteration();
-		int iteration = 0;
+		int iteration = 1;
 		while(! nextIteration.lessOrEqual(prevIteration)) {
+			logger.info("Iteration n."+iteration);
 			if(iteration <= AnalysisConstants.WIDENING_LIMIT)
 				prevIteration = prevIteration.lub(nextIteration);
 			else prevIteration = prevIteration.widening(nextIteration);
 			nextIteration = prevIteration.singleIteration();
+			iteration++;
 		}
 		return nextIteration;
 		
@@ -56,8 +60,14 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	
 	private CFGAnalysisResults<T> singleIteration() {
 		Collection<Statement> statements = cfg.getOrderedStatements();
+		int size = statements.size();
+		logger.info("# statements:"+size);
 		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();
+		int i = 1;
 		for(Statement st : statements) {
+			if(i%10==0)
+				logger.info("Analyzed "+i+" statements");
+			i++;
 			AbstractAnalysisState<T> state = getEntryStateFromPoststates(poststates, st);
 			if(function.containsKey(st) && function.get(st) != null)
 				state = state==null? function.get(st) : state.lub(function.get(st));

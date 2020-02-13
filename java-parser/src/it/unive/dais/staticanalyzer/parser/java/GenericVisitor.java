@@ -96,15 +96,17 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 			throw new UnsupportedOperationException("Lambda expressions not yet supported");
 		if(ctx.primary()!=null)
 			return this.visitPrimary(ctx.primary());
-		if(ctx.bop == null)
-			throw new UnsupportedOperationException("Binary operator cannot be null here!");
 		if(ctx.prefix!=null) {
 			String prefixValue = ctx.prefix.getText();
 			switch(prefixValue) {
 				case "!": return new NegatedBooleanExpression(this.visitExpression(ctx.expression(0)));
-				default : throw new UnsupportedOperationException("Expression with prefix operators (e.g., ++ and --) not yet supported"); 
+				case "+": return this.visitExpression(ctx.expression(0));
+				case "-": return new BinaryArithmeticExpression(new IntegerConstant(0), this.visitExpression(ctx.expression(0)), "-");
+				default : throw new UnsupportedOperationException("Prefix operator "+prefixValue+" not yet supported"); 
 			}
 		}
+		if(ctx.bop == null)
+			throw new UnsupportedOperationException("Binary operator cannot be null here!");
 		
 		
 		String binaryOperator = ctx.bop.getText();
