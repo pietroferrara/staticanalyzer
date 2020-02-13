@@ -1,5 +1,6 @@
 package it.unive.dais.staticanalyzer.cfg;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Set;
@@ -54,11 +55,15 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	}
 	
 	private CFGAnalysisResults<T> singleIteration() {
-		Set<Statement> statements = getCfg().vertexSet();
+		Collection<Statement> statements = cfg.getOrderedStatements();
 		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();
-		for(Statement st : statements)
+		for(Statement st : statements) {
+			AbstractAnalysisState<T> state = getEntryStateFromPoststates(poststates, st);
 			if(function.containsKey(st) && function.get(st) != null)
-				poststates.put(st, function.get(st).smallStepSemantics(st));
+				state = state==null? function.get(st) : state.lub(function.get(st));
+			if(state!=null)
+				poststates.put(st, state.smallStepSemantics(st));
+		}
 		return computeNewPrestatesFromPostStates(poststates);
 	}
 
@@ -66,28 +71,35 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 		Map<Statement, AbstractAnalysisState<T>> newPrestates = new HashMap<>(); 
 		function.put(getCfg().getEntryPoint(), entryState);
 		for(Statement st : getCfg().vertexSet()) {
-			AbstractAnalysisState<T> state = getCfg().getEntryPoint().equals(st) ? entryState : null;
-			for(DefaultWeightedEdge edge : this.getCfg().incomingEdgesOf(st)) {
-				Statement source = getCfg().getEdgeSource(edge);
-				AbstractAnalysisState<T> newState = poststates.get(source);
-				Boolean condition;
-				try {
-					condition = CFG.getBooleanFromWeight(getCfg().getEdgeWeight(edge));
-				} catch (ParsingException e) {
-					throw new UnsupportedOperationException("Unkown edge weight", e);
-				}
-				if(newState!=null) {
-					if(condition!=null) {
-						if(condition.booleanValue())
-							newState = newState.assumeExpressionHolds();
-						else newState = newState.assumeExpressionDoesNotHold();
-					}
-					state = state==null ? newState : newState.lub(state);
-				}
-			}
+			AbstractAnalysisState<T> state = getEntryStateFromPoststates(poststates, st);
 			newPrestates.put(st, state);
 		}
 		return new CFGAnalysisResults<T>(getCfg(), newPrestates);
+	}
+
+
+	private AbstractAnalysisState<T> getEntryStateFromPoststates(Map<Statement, AbstractAnalysisState<T>> poststates,
+			Statement st) {
+		AbstractAnalysisState<T> state = getCfg().getEntryPoint().equals(st) ? entryState : null;
+		for(DefaultWeightedEdge edge : this.getCfg().incomingEdgesOf(st)) {
+			Statement source = getCfg().getEdgeSource(edge);
+			AbstractAnalysisState<T> newState = poststates.get(source);
+			Boolean condition;
+			try {
+				condition = CFG.getBooleanFromWeight(getCfg().getEdgeWeight(edge));
+			} catch (ParsingException e) {
+				throw new UnsupportedOperationException("Unkown edge weight", e);
+			}
+			if(newState!=null) {
+				if(condition!=null) {
+					if(condition.booleanValue())
+						newState = newState.assumeExpressionHolds();
+					else newState = newState.assumeExpressionDoesNotHold();
+				}
+				state = state==null ? newState : newState.lub(state);
+			}
+		}
+		return state;
 	}
 
 

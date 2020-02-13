@@ -215,9 +215,9 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 	public FloatConstant visitFloatLiteral(FloatLiteralContext ctx) {
 		double value;
 		if(ctx.FLOAT_LITERAL()!=null)
-			value = Long.decode(ctx.FLOAT_LITERAL().getText());
+			value = Double.valueOf(ctx.FLOAT_LITERAL().getText());
 		else if(ctx.HEX_FLOAT_LITERAL()!=null)
-				value = Integer.decode(ctx.HEX_FLOAT_LITERAL().getText());
+				value = Double.valueOf(ctx.HEX_FLOAT_LITERAL().getText());
 		else throw new UnsupportedOperationException("Numerical constant not supported: "+ctx.getText());
 		return new FloatConstant(value);
 	}

@@ -70,7 +70,7 @@ public abstract class FunctionalDomain<D, T extends Lattice<T>, V extends Functi
 			return succ;
 		if(succ.isBottom())
 			return succ.bottom();
-		return functionalLift(succ, (o1, o2) -> o1.widening(o2));
+		return functionalLift(succ, (o1, o2) -> o1 == null ? o2 : o1.widening(o2));
 	}
 	
 	@Override

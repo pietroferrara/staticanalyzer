@@ -1,5 +1,10 @@
 package it.unive.dais.staticanalyzer.cfg;
 
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.HashSet;
+import java.util.Set;
+
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
 
@@ -13,7 +18,7 @@ public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeighted
 	private Statement entryPoint;
 	//The last statement added to the CFG
 	private Statement lastAdded;
-
+	
 	public CFG() {
 		super(DefaultWeightedEdge.class);
 	}
@@ -23,7 +28,32 @@ public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeighted
 		this.entryPoint = st;
 		this.lastAdded = st;
 	}
+	
+	ArrayList<Statement> getOrderedStatements() {
+		ArrayList<Statement> prev = new ArrayList<>();
+		ArrayList<Statement> result = new ArrayList<>();
+		result.add(this.entryPoint);
+		Set<Statement> lastAdded = new HashSet<>();
+		lastAdded.add(this.entryPoint);
+		while(result.size()>prev.size()) {
+			prev = result;
+			result = new ArrayList<>(prev);
+			Set<Statement> added = new HashSet<>();
+			for(Statement st : lastAdded) {
+				for(DefaultWeightedEdge edge : this.outgoingEdgesOf(st)) {
+					Statement target = this.getEdgeTarget(edge);
+					if(! prev.contains(target)) {
+						result.add(target);
+						added.add(target);
+					}
+				}
+			}
+			lastAdded = added;
+		}
+		return result;
+	}
 
+	
 	public void append(Statement statement) throws ParsingException {
 		//empty statement
 		if(statement == null)
