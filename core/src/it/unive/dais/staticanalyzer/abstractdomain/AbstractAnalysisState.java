@@ -3,9 +3,10 @@ package it.unive.dais.staticanalyzer.abstractdomain;
 import static org.junit.Assert.assertEquals;
 
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
+import it.unive.dais.staticanalyzer.cfg.expression.NegatedBooleanExpression;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
-public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T>> implements SemanticDomain<AbstractAnalysisState<T>>, Lattice<AbstractAnalysisState<T>> {
+public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T>> implements Lattice<AbstractAnalysisState<T>> {
 	private final Expression currentExpression;
 	private final T abstractState;
 	
@@ -46,7 +47,7 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 		return new AbstractAnalysisState<T>(currentExpression, this.abstractState.widening(succ.abstractState));
 	}
 
-	@Override
+	
 	public AbstractAnalysisState<T> smallStepSemantics(Statement st) {
 		if(this.isBottom()) return this.bottom();
 		T newAbstractState = abstractState.smallStepSemantics(st);
@@ -54,6 +55,18 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 			return new AbstractAnalysisState<T>((Expression) st, newAbstractState);
 		else
 			return new AbstractAnalysisState<T>(null, newAbstractState);
+	}
+
+	public AbstractAnalysisState<T> assumeExpressionHolds() {
+		if(this.isBottom()) return this.bottom();
+		T newAbstractState = abstractState.assume(this.currentExpression);
+		return new AbstractAnalysisState<T>(null, newAbstractState);
+	}
+
+	public AbstractAnalysisState<T> assumeExpressionDoesNotHold() {
+		if(this.isBottom()) return this.bottom();
+		T newAbstractState = abstractState.assume(new NegatedBooleanExpression(this.currentExpression));
+		return new AbstractAnalysisState<T>(null, newAbstractState);
 	}
 	
 	@Override

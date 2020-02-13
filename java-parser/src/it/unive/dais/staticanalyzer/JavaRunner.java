@@ -54,7 +54,7 @@ public class JavaRunner {
 
 		
 		
-		CFGAnalysisResults<AbstractAnalysisState<Environment<IntegerNumericalConstantDomain>>> analysis =
+		CFGAnalysisResults<Environment<IntegerNumericalConstantDomain>> analysis =
 				CFGAnalysisResults.computeFixpoint(cfg, getAbstractState(clIoptionsToStructuredOptions.getDomain()));
 				
 		
@@ -62,7 +62,7 @@ public class JavaRunner {
 	}
 
 	private static void dumpOutput(
-			CFGAnalysisResults<AbstractAnalysisState<Environment<IntegerNumericalConstantDomain>>> analysis,
+			CFGAnalysisResults<Environment<IntegerNumericalConstantDomain>> analysis,
 			String output) throws IOException {
 
 		DOTExporter<Statement, DefaultWeightedEdge> exporter2 = new DOTExporter<Statement, DefaultWeightedEdge>(

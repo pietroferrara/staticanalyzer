@@ -93,7 +93,50 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 		}
 		throw new UnsupportedOperationException("Statement "+st.getClass().getTypeName()+" not yet supported");
 	}
+
+	@Override
+	public Apron assume(Expression expr) {
+		try {
+			if(expr instanceof NumericalComparisonExpression)
+				return new Apron(state.meetCopy(manager, convertNumericalComparisonToApronFormat((NumericalComparisonExpression) expr)));
+			else if(expr instanceof NegatedBooleanExpression) {
+				Expression inner = ((NegatedBooleanExpression) expr).getExpression();
+				if(inner instanceof NumericalComparisonExpression)
+					return assume(((NumericalComparisonExpression) inner).negate());
+			}
+		}
+		catch(ApronException e) {
+			throw new UnsupportedOperationException("Apron library crashed", e);
+		}
+		throw new UnsupportedOperationException("Assumption of expression "+expr.getClass().getTypeName()+" not yet supported");
+	}
 	
+	private Tcons1 convertNumericalComparisonToApronFormat(NumericalComparisonExpression expr) {
+		Expression combinedExpr = new BinaryArithmeticExpression(expr.getLeft(), expr.getRight(), "-"); //Apron supports only "expr <comparison> 0", so we need to move everything on the left sode 
+		switch(expr.getOperator()) {
+			case "==":
+			case "!=":
+			case ">":
+			case ">=": return new Tcons1(state.getEnvironment(), convertComparisonOperator(expr.getOperator()), convertExpressionToApronFormat(combinedExpr));
+			//For the other cases Need to revert the operator since Apron has a limited support for comparison operators
+			case "<": combinedExpr = new BinaryArithmeticExpression(new IntegerConstant(0), combinedExpr, "-");
+				return new Tcons1(state.getEnvironment(), convertComparisonOperator(">="), convertExpressionToApronFormat(combinedExpr));
+			case "<=": combinedExpr = new BinaryArithmeticExpression(new IntegerConstant(0), combinedExpr, "-");
+				return new Tcons1(state.getEnvironment(), convertComparisonOperator(">"), convertExpressionToApronFormat(combinedExpr));
+			default: throw new UnsupportedOperationException("Comparison operator "+expr.getOperator()+" not yet supported"); 
+		}
+	}
+	
+	private int convertComparisonOperator(String operator) {
+		switch(operator) {
+			case ">=": return Tcons1.SUPEQ;
+			case ">": return Tcons1.SUP;
+			case "==": return Tcons1.EQ;
+			case "!=": return Tcons1.DISEQ;
+			default: throw new UnsupportedOperationException("Comparison operator "+operator+" not yet supported by Apron interface");
+		}
+	}
+
 	private Texpr1Node convertExpressionToApronFormat(Expression expr) {
 		if(expr instanceof BooleanExpression)
 			throw new UnsupportedOperationException("Boolean expressions not yet supported by Apron interface");

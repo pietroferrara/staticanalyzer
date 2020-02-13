@@ -58,7 +58,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();
 		for(Statement st : statements)
 			if(function.containsKey(st) && function.get(st) != null)
-					poststates.put(st, function.get(st).smallStepSemantics(st));
+				poststates.put(st, function.get(st).smallStepSemantics(st));
 		return computeNewPrestatesFromPostStates(poststates);
 	}
 
@@ -70,8 +70,20 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 			for(DefaultWeightedEdge edge : this.getCfg().incomingEdgesOf(st)) {
 				Statement source = getCfg().getEdgeSource(edge);
 				AbstractAnalysisState<T> newState = poststates.get(source);
-				if(newState!=null)
+				Boolean condition;
+				try {
+					condition = CFG.getBooleanFromWeight(getCfg().getEdgeWeight(edge));
+				} catch (ParsingException e) {
+					throw new UnsupportedOperationException("Unkown edge weight", e);
+				}
+				if(newState!=null) {
+					if(condition!=null) {
+						if(condition.booleanValue())
+							newState = newState.assumeExpressionHolds();
+						else newState = newState.assumeExpressionDoesNotHold();
+					}
 					state = state==null ? newState : newState.lub(state);
+				}
 			}
 			newPrestates.put(st, state);
 		}

@@ -47,5 +47,11 @@ public final class Environment<T extends NonRelationalDomain <T>> extends Functi
 		throw new UnsupportedOperationException("Statement "+st.getClass().getTypeName()+" not yet supported");
 	}
 
+	@Override
+	public Environment<T> assume(Expression currentExpression) {
+		//TODO: to be refined
+		return new Environment<>(valueDomain, function);
+	}
+
 
 }
