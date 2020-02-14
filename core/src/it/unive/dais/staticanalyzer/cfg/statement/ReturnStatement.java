@@ -5,8 +5,8 @@ import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 
 public class ReturnStatement extends Assignment {
 
-	public ReturnStatement(Expression returnedExpression) {
-		super(new VariableIdentifier("<ret>"), returnedExpression);
+	public ReturnStatement(Expression returnedExpression, int line, int column) {
+		super(new VariableIdentifier("<ret>", line, column), returnedExpression, line, column);
 	}
 	
 	@Override

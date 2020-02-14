@@ -1,7 +1,11 @@
 package it.unive.dais.staticanalyzer.cfg;
 
-public abstract class Type implements ParsedBlock {
+public abstract class Type extends ParsedBlock {
 	
+	public Type(int line, int column) {
+		super(line, column);
+	}
+
 	@Override
 	public boolean equals(Object obj) {
 		return this.toString().equals(obj.toString());
@@ -15,8 +19,8 @@ public abstract class Type implements ParsedBlock {
 	public static class ObjectType extends Type {
 		private String typesignature;
 
-		public ObjectType(String typesignature) {
-			super();
+		public ObjectType(String typesignature, int line, int column) {
+			super(line, column);
 			this.typesignature = typesignature;
 		}
 		
@@ -29,73 +33,93 @@ public abstract class Type implements ParsedBlock {
 	}
 
 	public static abstract class PrimitiveType extends Type {
-		public static PrimitiveType parse(String s) {
+		public PrimitiveType(int line, int column) {
+			super(line, column);
+		}
+
+		public static PrimitiveType parse(String s, int line, int column) {
 			switch(s) {
-				case "boolean" : return BooleanType.instance;
-				case "char" : return CharType.instance;
-				case "byte" : return ByteType.instance;
-				case "short" : return ShortType.instance;
-				case "int" : return IntType.instance;
-				case "long" : return LongType.instance;
-				case "float" : return FloatType.instance;
-				case "double" : return DoubleType.instance;
+				case "boolean" : return new BooleanType(line, column);
+				case "char" : return new CharType(line, column);
+				case "byte" : return new ByteType(line, column);
+				case "short" : return new ShortType(line, column);
+				case "int" : return new IntType(line, column);
+				case "long" : return new LongType(line, column);
+				case "float" : return new FloatType(line, column);
+				case "double" : return new DoubleType(line, column);
 				default : throw new UnsupportedOperationException("Primitive type "+s+" not yet supported");
 			}
 		}
 	}
 
 	public static class BooleanType extends PrimitiveType {
-		public static final BooleanType instance = new BooleanType();
-		
+		public BooleanType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "bool";
 		}
 	}
 	public static class CharType extends PrimitiveType {
-		public static final CharType instance = new CharType();
-		
+		public CharType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "char";
 		}
 	}
 	public static class ByteType extends PrimitiveType {
-		public static final ByteType instance = new ByteType();
-		
+		public ByteType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "byte";
 		}
 	}
 	public static class ShortType extends PrimitiveType {
-		public static final ShortType instance = new ShortType();
-		
+		public ShortType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "short";
 		}
 	}
 	public static class IntType extends PrimitiveType {
-		public static final IntType instance = new IntType();
-		
+		public IntType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "int";
 		}
 	}
 	public static class LongType extends PrimitiveType {
-		public static final LongType instance = new LongType();
-		
+		public LongType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "long";
 		}
 	}
 	public static class FloatType extends PrimitiveType {
-		public static final FloatType instance = new FloatType();
-		
+		public FloatType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "float";
 		}
 	}
 	public static class DoubleType extends PrimitiveType {
-		public static final DoubleType instance = new DoubleType();
-		
+		public DoubleType(int line, int column) {
+			super(line, column);
+		}
+
 		public String toString() {
 			return "double";
 		}

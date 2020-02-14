@@ -21,7 +21,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 	
 	@Override
 	public CFG visitBlock(BlockContext block) {
-		CFG result = new CFG();
+		CFG result = new CFG(block.start.getLine(), block.start.getStartIndex());
 		for(BlockStatementContext child : block.blockStatement())
 			try {
 				result.append(this.visitBlockStatement(child), null);
@@ -80,9 +80,9 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 		if(ctx.RETURN()!=null)
 				try {
 					if(ctx.expression().size()==0)
-						return new CFG(new ReturnStatement(null));
+						return new CFG(new ReturnStatement(null, ctx.start.getLine(), ctx.start.getStartIndex()));
 					else if(ctx.expression().size()==1)
-						return new CFG(new ReturnStatement(GenericVisitor.instance.visitExpression(ctx.expression().get(0))));
+						return new CFG(new ReturnStatement(GenericVisitor.instance.visitExpression(ctx.expression().get(0)), ctx.start.getLine(), ctx.start.getStartIndex()));
 					else throw new UnsupportedOperationException("Multiple expressions in a return statement are not supported");
 				} catch (ParsingException e) {
 					throw new UnsupportedOperationException("Parsing of return statement "+ctx.getText()+" failed");
@@ -99,14 +99,14 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 			try {
 				CFG condition = this.visitParExpression(ctx.parExpression());
 				CFG thenbranch = this.visitStatement(ctx.statement(0));
-				CFG elsebranch = ctx.statement().size()==2 ? this.visitStatement(ctx.statement(1)) : new CFG(new SkipStatement());
-				CFG result = new CFG();
+				CFG elsebranch = ctx.statement().size()==2 ? this.visitStatement(ctx.statement(1)) : new CFG(new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex()));
+				CFG result = new CFG(ctx.start.getLine(), ctx.start.getStartIndex());
 				result.append(condition, null);
 				Statement afterCondition = result.getLastAdded();
 				result.append(thenbranch, true);
 				Statement lastAfterThen = result.getLastAdded();
 				result.append(elsebranch, afterCondition, false);
-				SkipStatement joinStatement = new SkipStatement();
+				SkipStatement joinStatement = new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex());
 				if(! result.getLastAdded().isTerminatingStatement()) 
 					result.append(joinStatement);
 				if(! lastAfterThen.isTerminatingStatement() && elsebranch!=null)
@@ -122,12 +122,12 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 			try {
 				CFG condition = this.visitParExpression(ctx.parExpression());
 				CFG body = this.visitStatement(ctx.statement(0));
-				CFG result = new CFG();
+				CFG result = new CFG(ctx.start.getLine(), ctx.start.getStartIndex());
 				result.append(condition, null);
 				result.append(body, true);
-				result.append(new SkipStatement());
+				result.append(new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex()));
 				result.addAndCheckEdge(result.getLastAdded(), condition.getEntryPoint(), null);
-				Statement skip = new SkipStatement();
+				Statement skip = new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex());
 				result.append(new CFG(skip), condition.getLastAdded(), false);
 				return result;
 			} catch (ParsingException e) {
@@ -143,12 +143,12 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 	
 	@Override
 	public CFG visitLocalVariableDeclaration(LocalVariableDeclarationContext ctx) {
-		CFG result = new CFG();
+		CFG result = new CFG(ctx.start.getLine(), ctx.start.getStartIndex());
 		Type t = GenericVisitor.instance.visitTypeType(ctx.typeType());
 		for(VariableDeclaratorContext vardec : ctx.variableDeclarators().variableDeclarator()) {
 			VariableIdentifier varname = GenericVisitor.instance.visitVariableDeclarator(vardec);
 			try {
-				result.append(new VariableDeclaration(t, varname));
+				result.append(new VariableDeclaration(t, varname, ctx.start.getLine(), ctx.start.getStartIndex()));
 			} catch (ParsingException e) {
 				throw new RuntimeException("Failure when building up the CFG of the body", e);
 			}

@@ -1,8 +1,9 @@
 package it.unive.dais.staticanalyzer.cfg.expression;
 
-public class BooleanConstant implements Constant {
+public class BooleanConstant extends Constant {
 	private boolean value;
-	public BooleanConstant(boolean value) {
+	public BooleanConstant(boolean value, int line, int column) {
+		super(line, column);
 		this.value = value;
 	}
 	@Override

@@ -10,20 +10,22 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
-public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeightedEdge> implements ParsedBlock {
+public class CFG extends ParsedBlock {
 	private static final long serialVersionUID = -5787684749175918173L;
-	
+	private final DefaultDirectedWeightedGraph<Statement, DefaultWeightedEdge> graph; 
 	
 	//The first statement added to the CFG
 	private Statement entryPoint;
 	//The last statement added to the CFG
 	private Statement lastAdded;
 	
-	public CFG() {
-		super(DefaultWeightedEdge.class);
+	public CFG(int line, int column) {
+		super(line, column);
+		this.graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 	}
 	public CFG(Statement st) throws ParsingException {
-		super(DefaultWeightedEdge.class);
+		super(st.getLine(), st.getColumn());
+		this.graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 		addAndCheckVertex(st);
 		this.entryPoint = st;
 		this.lastAdded = st;
@@ -40,8 +42,8 @@ public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeighted
 			result = new ArrayList<>(prev);
 			Set<Statement> added = new HashSet<>();
 			for(Statement st : lastAdded) {
-				for(DefaultWeightedEdge edge : this.outgoingEdgesOf(st)) {
-					Statement target = this.getEdgeTarget(edge);
+				for(DefaultWeightedEdge edge : graph.outgoingEdgesOf(st)) {
+					Statement target = graph.getEdgeTarget(edge);
 					if(! prev.contains(target)) {
 						result.add(target);
 						added.add(target);
@@ -58,7 +60,7 @@ public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeighted
 		//empty statement
 		if(statement == null)
 			return;
-		this.addVertex(statement);
+		graph.addVertex(statement);
 		if(getEntryPoint() == null)
 			this.entryPoint = statement;
 		if(getLastAdded() != null)
@@ -71,18 +73,22 @@ public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeighted
 		this.lastAdded = from;
 		this.append(visitBlockStatement, condition);
 	}
+	
+	public DefaultDirectedWeightedGraph<Statement, DefaultWeightedEdge> getGraph() {
+		return graph;
+	}
 
 	public void append(CFG visitBlockStatement, Boolean condition) throws ParsingException {
 		//empty CFG
 		if(visitBlockStatement == null || visitBlockStatement.isEmpty())
 			return;
 		
-		for(Statement v : visitBlockStatement.vertexSet())
+		for(Statement v : visitBlockStatement.getGraph().vertexSet())
 			addAndCheckVertex(v);
-		for(DefaultWeightedEdge e : visitBlockStatement.edgeSet()) {
-			Statement source = visitBlockStatement.getEdgeSource(e);
-			Statement target = visitBlockStatement.getEdgeTarget(e);
-			double weight = visitBlockStatement.getEdgeWeight(e);
+		for(DefaultWeightedEdge e : visitBlockStatement.getGraph().edgeSet()) {
+			Statement source = visitBlockStatement.getGraph().getEdgeSource(e);
+			Statement target = visitBlockStatement.getGraph().getEdgeTarget(e);
+			double weight = visitBlockStatement.getGraph().getEdgeWeight(e);
 			addAndCheckEdge(source, target, getBooleanFromWeight(weight));
 		}
 		
@@ -100,10 +106,10 @@ public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeighted
 	public void addAndCheckEdge(Statement from, Statement to, Boolean weight) throws ParsingException {
 		if(from.isTerminatingStatement())
 			throw new UnsupportedOperationException("It is not allowed to add outcoming edges from terminating statements");
-		DefaultWeightedEdge edge = this.addEdge(from, to); 
+		DefaultWeightedEdge edge = graph.addEdge(from, to); 
 		if(edge==null)
 			throw new ParsingException("Edge from "+from+" to "+to+" already contained in the current CFG, or the vertexes of the edge were not contained");
-		this.setEdgeWeight(edge, getWeightFromBoolean(weight));
+		graph.setEdgeWeight(edge, getWeightFromBoolean(weight));
 	}
 	
 	public static double getWeightFromBoolean(Boolean b) {
@@ -125,7 +131,7 @@ public class CFG extends DefaultDirectedWeightedGraph<Statement, DefaultWeighted
 	}
 	
 	private void addAndCheckVertex(Statement v) throws ParsingException {
-		if(! this.addVertex(v))
+		if(! graph.addVertex(v))
 			throw new ParsingException("Vertex "+v.toString()+" already contained in the current CFG");
 	}
 	public Statement getLastAdded() {

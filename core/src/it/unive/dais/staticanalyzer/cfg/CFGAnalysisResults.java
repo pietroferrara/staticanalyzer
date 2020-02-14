@@ -80,7 +80,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	private CFGAnalysisResults<T> computeNewPrestatesFromPostStates(Map<Statement, AbstractAnalysisState<T>> poststates) {
 		Map<Statement, AbstractAnalysisState<T>> newPrestates = new HashMap<>(); 
 		function.put(getCfg().getEntryPoint(), entryState);
-		for(Statement st : getCfg().vertexSet()) {
+		for(Statement st : getCfg().getGraph().vertexSet()) {
 			AbstractAnalysisState<T> state = getEntryStateFromPoststates(poststates, st);
 			newPrestates.put(st, state);
 		}
@@ -91,12 +91,12 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	private AbstractAnalysisState<T> getEntryStateFromPoststates(Map<Statement, AbstractAnalysisState<T>> poststates,
 			Statement st) {
 		AbstractAnalysisState<T> state = getCfg().getEntryPoint().equals(st) ? entryState : null;
-		for(DefaultWeightedEdge edge : this.getCfg().incomingEdgesOf(st)) {
-			Statement source = getCfg().getEdgeSource(edge);
+		for(DefaultWeightedEdge edge : getCfg().getGraph().incomingEdgesOf(st)) {
+			Statement source = getCfg().getGraph().getEdgeSource(edge);
 			AbstractAnalysisState<T> newState = poststates.get(source);
 			Boolean condition;
 			try {
-				condition = CFG.getBooleanFromWeight(getCfg().getEdgeWeight(edge));
+				condition = CFG.getBooleanFromWeight(getCfg().getGraph().getEdgeWeight(edge));
 			} catch (ParsingException e) {
 				throw new UnsupportedOperationException("Unkown edge weight", e);
 			}

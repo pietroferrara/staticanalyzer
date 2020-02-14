@@ -65,7 +65,7 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 
 	public AbstractAnalysisState<T> assumeExpressionDoesNotHold() {
 		if(this.isBottom()) return this.bottom();
-		T newAbstractState = abstractState.assume(new NegatedBooleanExpression(this.currentExpression));
+		T newAbstractState = abstractState.assume(new NegatedBooleanExpression(this.currentExpression, this.currentExpression.getLine(), this.currentExpression.getColumn()));
 		return new AbstractAnalysisState<T>(null, newAbstractState);
 	}
 	

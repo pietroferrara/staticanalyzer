@@ -1,8 +1,9 @@
 package it.unive.dais.staticanalyzer.cfg.expression;
 
-public class CharConstant implements Constant {
+public class CharConstant extends Constant {
 	private char value;
-	public CharConstant(char value) {
+	public CharConstant(char value, int line, int column) {
+		super(line, column);
 		this.value = value;
 	}
 	@Override

@@ -1,7 +1,9 @@
 package it.unive.dais.staticanalyzer.cfg.statement;
 
-public class SkipStatement implements Statement {
-	public SkipStatement() { }
+public class SkipStatement extends Statement {
+	public SkipStatement(int line, int column) {
+		super(line, column);
+	}
 	
 	@Override
 	public String toString() {

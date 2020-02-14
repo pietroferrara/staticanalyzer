@@ -2,8 +2,12 @@ package it.unive.dais.staticanalyzer.cfg.statement;
 
 import it.unive.dais.staticanalyzer.cfg.ParsedBlock;
 
-public interface Statement extends ParsedBlock {
+public abstract class Statement extends ParsedBlock {
 
-	boolean isTerminatingStatement();
+	public Statement(int line, int column) {
+		super(line, column);
+	}
+
+	public abstract boolean isTerminatingStatement();
 
 }

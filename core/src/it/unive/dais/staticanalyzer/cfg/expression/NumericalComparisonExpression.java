@@ -1,10 +1,11 @@
 package it.unive.dais.staticanalyzer.cfg.expression;
 
-public class NumericalComparisonExpression implements Expression {
+public class NumericalComparisonExpression extends Expression {
 	private Expression left, right;
 	private String operator;
 
-	public NumericalComparisonExpression(Expression left, Expression right, String operator) {
+	public NumericalComparisonExpression(Expression left, Expression right, String operator, int line, int column) {
+		super(line, column);
 		this.left = left;
 		this.right = right;
 		this.operator = operator;
@@ -28,7 +29,7 @@ public class NumericalComparisonExpression implements Expression {
 	}
 
 	public Expression negate() {
-		return new NumericalComparisonExpression(left, right, NumericalComparisonExpression.negateOperator(operator));
+		return new NumericalComparisonExpression(left, right, NumericalComparisonExpression.negateOperator(operator), this.getLine(), this.getColumn());
 	}
 
 	private static String negateOperator(String operator) {

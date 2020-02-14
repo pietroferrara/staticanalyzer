@@ -1,9 +1,10 @@
 package it.unive.dais.staticanalyzer.cfg.expression;
 
-public class NegatedBooleanExpression implements Expression {
+public class NegatedBooleanExpression extends Expression {
 	private Expression expression;
 
-	public NegatedBooleanExpression(Expression exp) {
+	public NegatedBooleanExpression(Expression exp, int line, int column) {
+		super(line, column);
 		this.expression = exp;
 	}
 	@Override

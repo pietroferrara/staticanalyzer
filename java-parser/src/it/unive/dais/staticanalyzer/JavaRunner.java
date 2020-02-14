@@ -84,7 +84,7 @@ public class JavaRunner {
 					public String getName(DefaultWeightedEdge component) {
 						Boolean b;
 						try {
-							b = CFG.getBooleanFromWeight(analysis.getCfg().getEdgeWeight(component));
+							b = CFG.getBooleanFromWeight(analysis.getCfg().getGraph().getEdgeWeight(component));
 						} catch (ParsingException e) {
 							return "<error>";
 						}
@@ -95,7 +95,7 @@ public class JavaRunner {
 				}
 		);
 		try(FileWriter writer = new FileWriter("analysisresult.dot")) {
-			exporter2.exportGraph(analysis.getCfg(), writer);
+			exporter2.exportGraph(analysis.getCfg().getGraph(), writer);
 		}
 		
 	}
@@ -128,7 +128,7 @@ public class JavaRunner {
 					public String getName(DefaultWeightedEdge component) {
 						Boolean b;
 						try {
-							b = CFG.getBooleanFromWeight(cfg.getEdgeWeight(component));
+							b = CFG.getBooleanFromWeight(cfg.getGraph().getEdgeWeight(component));
 						} catch (ParsingException e) {
 							return "<error>";
 						}
@@ -139,7 +139,7 @@ public class JavaRunner {
 				}
 		);
 		try(FileWriter writer = new FileWriter(cfgOutput)) {
-			exporter.exportGraph(cfg, writer);
+			exporter.exportGraph(cfg.getGraph(), writer);
 		}
 	}
 

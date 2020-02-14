@@ -1,10 +1,11 @@
 package it.unive.dais.staticanalyzer.cfg.expression;
 
-public class BooleanExpression implements Expression {
+public class BooleanExpression extends Expression {
 	private Expression left, right;
 	private String operator;
 
-	public BooleanExpression(Expression left, Expression right, String operator) {
+	public BooleanExpression(Expression left, Expression right, String operator, int line, int column) {
+		super(line, column);
 		this.left = left;
 		this.right = right;
 		this.operator = operator;
@@ -15,8 +16,8 @@ public class BooleanExpression implements Expression {
 	}
 	public BooleanExpression negate() {
 		switch(getOperator()) {
-			case "&&": return new BooleanExpression(new NegatedBooleanExpression(this.getLeft()), new NegatedBooleanExpression(this.getRight()), "||");
-			case "||": return new BooleanExpression(new NegatedBooleanExpression(this.getLeft()), new NegatedBooleanExpression(this.getRight()), "&&");
+			case "&&": return new BooleanExpression(new NegatedBooleanExpression(this.getLeft(), this.getLeft().getLine(), this.getLeft().getColumn()), new NegatedBooleanExpression(this.getRight(), this.getRight().getLine(), this.getRight().getColumn()), "||", this.getLine(), this.getColumn());
+			case "||": return new BooleanExpression(new NegatedBooleanExpression(this.getLeft(), this.getLeft().getLine(), this.getLeft().getColumn()), new NegatedBooleanExpression(this.getRight(), this.getRight().getLine(), this.getRight().getColumn()), "&&", this.getLine(), this.getColumn());
 			default: throw new UnsupportedOperationException("Boolean operator "+getOperator()+" not yet supported");
 		}
 	}

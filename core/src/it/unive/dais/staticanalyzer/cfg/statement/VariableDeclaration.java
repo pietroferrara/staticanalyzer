@@ -4,11 +4,11 @@ import it.unive.dais.staticanalyzer.cfg.ParsedBlock;
 import it.unive.dais.staticanalyzer.cfg.Type;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 
-public class VariableDeclaration implements ParsedBlock, Statement {
+public class VariableDeclaration extends Statement {
 	private VariableIdentifier id;
 	private Type type;
-	public VariableDeclaration(Type type, VariableIdentifier id) {
-		super();
+	public VariableDeclaration(Type type, VariableIdentifier id, int line, int column) {
+		super(line, column);
 		this.type = type;
 		this.id = id;
 	}

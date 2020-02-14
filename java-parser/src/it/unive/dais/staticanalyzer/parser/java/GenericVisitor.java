@@ -60,12 +60,12 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 	
 	@Override
 	public Type visitPrimitiveType(PrimitiveTypeContext ctx) {
-		return PrimitiveType.parse(ctx.children.get(0).getText());
+		return PrimitiveType.parse(ctx.children.get(0).getText(), ctx.start.getLine(), ctx.start.getStartIndex());
 	}
 	
 	@Override
 	public Type visitClassOrInterfaceType(ClassOrInterfaceTypeContext ctx) {
-		return new ObjectType(ctx.getText());
+		return new ObjectType(ctx.getText(), ctx.start.getLine(), ctx.start.getStartIndex());
 	}
 	
 	@Override
@@ -78,7 +78,7 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 	@Override
 	public VariableIdentifier visitVariableDeclaratorId(VariableDeclaratorIdContext ctx) {
 		avoidArrays(ctx);
-		return new VariableIdentifier(ctx.IDENTIFIER().getText());
+		return new VariableIdentifier(ctx.IDENTIFIER().getText(), ctx.start.getLine(), ctx.start.getStartIndex());
 	}
 
 	@Override
@@ -99,9 +99,9 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 		if(ctx.prefix!=null) {
 			String prefixValue = ctx.prefix.getText();
 			switch(prefixValue) {
-				case "!": return new NegatedBooleanExpression(this.visitExpression(ctx.expression(0)));
+				case "!": return new NegatedBooleanExpression(this.visitExpression(ctx.expression(0)), ctx.start.getLine(), ctx.start.getStartIndex());
 				case "+": return this.visitExpression(ctx.expression(0));
-				case "-": return new BinaryArithmeticExpression(new IntegerConstant(0), this.visitExpression(ctx.expression(0)), "-");
+				case "-": return new BinaryArithmeticExpression(new IntegerConstant(0, ctx.start.getLine(), ctx.start.getStartIndex()), this.visitExpression(ctx.expression(0)), "-", ctx.start.getLine(), ctx.start.getStartIndex());
 				default : throw new UnsupportedOperationException("Prefix operator "+prefixValue+" not yet supported"); 
 			}
 		}
@@ -136,15 +136,15 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 			case ">>":
 			case "&":
 			case "^":
-			case "|": return new BinaryArithmeticExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator);
+			case "|": return new BinaryArithmeticExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator, ctx.start.getLine(), ctx.start.getStartIndex());
 			case "<=":
 			case ">=":
 			case "<":
 			case ">":
 			case "==":
-			case "!=": return new NumericalComparisonExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator);
+			case "!=": return new NumericalComparisonExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator, ctx.start.getLine(), ctx.start.getStartIndex());
 			case "&&":
-			case "||": return new BooleanExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator);	
+			case "||": return new BooleanExpression(this.visitExpression(ctx.expression(0)), this.visitExpression(ctx.expression(1)), binaryOperator, ctx.start.getLine(), ctx.start.getStartIndex());	
 		}
 		throw new UnsupportedOperationException("Unsupported expression: "+ctx.getText());
 	}
@@ -156,7 +156,7 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 			case "=":
 				Expression assignedVariable = this.visitExpression(ctx.expression(0));
 				if(assignedVariable instanceof VariableIdentifier)
-					return new Assignment((VariableIdentifier) assignedVariable, this.visitExpression(ctx.expression(1)));
+					return new Assignment((VariableIdentifier) assignedVariable, this.visitExpression(ctx.expression(1)), ctx.start.getLine(), ctx.start.getStartIndex());
 				else throw new UnsupportedOperationException("Assignment of "+assignedVariable+" (type "+assignedVariable.getClass().getTypeName()+") not yet supported");
 		}
 		throw new UnsupportedOperationException("Unsupported expression: "+ctx.getText());
@@ -171,11 +171,11 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 		if(ctx.expression()!=null)
 			return this.visitExpression(ctx.expression());
 		if(ctx.THIS()!=null)
-			return new VariableIdentifier("this");
+			return new VariableIdentifier("this", ctx.start.getLine(), ctx.start.getStartIndex());
 		if(ctx.SUPER()!=null)
-			return new VariableIdentifier("super");
+			return new VariableIdentifier("super", ctx.start.getLine(), ctx.start.getStartIndex());
 		if(ctx.IDENTIFIER()!=null)
-			return new VariableIdentifier(ctx.IDENTIFIER().getText());
+			return new VariableIdentifier(ctx.IDENTIFIER().getText(), ctx.start.getLine(), ctx.start.getStartIndex());
 		if(ctx.literal()!=null)
 			return this.visitLiteral(ctx.literal());
 		throw new UnsupportedOperationException("Unsupported primary expression: "+ctx.getText());
@@ -184,17 +184,17 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 	@Override
 	public Constant visitLiteral(LiteralContext ctx) {
 		if(ctx.NULL_LITERAL()!=null)
-			return new NullConstant();
+			return new NullConstant(ctx.start.getLine(), ctx.start.getStartIndex());
 		if(ctx.BOOL_LITERAL()!=null)
-			return new BooleanConstant(Boolean.parseBoolean(ctx.getText()));
+			return new BooleanConstant(Boolean.parseBoolean(ctx.getText()), ctx.start.getLine(), ctx.start.getStartIndex());
 		if(ctx.integerLiteral()!=null)
 			return this.visitIntegerLiteral(ctx.integerLiteral());
 		if(ctx.floatLiteral()!=null)
 			return this.visitFloatLiteral(ctx.floatLiteral());
 		if(ctx.CHAR_LITERAL()!=null)
-			return new CharConstant(ctx.getText().charAt(1));
+			return new CharConstant(ctx.getText().charAt(1), ctx.start.getLine(), ctx.start.getStartIndex());
 		if(ctx.STRING_LITERAL()!=null)
-			return new StringConstant(ctx.getText().substring(1, ctx.getText().length()-1));
+			return new StringConstant(ctx.getText().substring(1, ctx.getText().length()-1), ctx.start.getLine(), ctx.start.getStartIndex());
 		throw new UnsupportedOperationException("Unsupported primary expression: "+ctx.getText());
 	}
 	
@@ -210,7 +210,7 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 		else if(ctx.BINARY_LITERAL()!=null)
 			value = Long.decode(ctx.BINARY_LITERAL().getText());
 		else throw new UnsupportedOperationException("Numerical constant not supported: "+ctx.getText());
-		return new IntegerConstant(value);
+		return new IntegerConstant(value, ctx.start.getLine(), ctx.start.getStartIndex());
 	}
 	
 	@Override
@@ -221,7 +221,7 @@ public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 		else if(ctx.HEX_FLOAT_LITERAL()!=null)
 				value = Double.valueOf(ctx.HEX_FLOAT_LITERAL().getText());
 		else throw new UnsupportedOperationException("Numerical constant not supported: "+ctx.getText());
-		return new FloatConstant(value);
+		return new FloatConstant(value, ctx.start.getLine(), ctx.start.getStartIndex());
 	}
 	
 
