@@ -38,3 +38,7 @@ The parameters of JavaRunner are the following ones:
 ```
 
 At the end of the analysis, JavaRunner produces a dot file (specified by option -o) with the control flow graph of the analyzed program as well as entry and exit states attached at each program point. In addition, it dumps the control flow graph of the program if option -cfg is specified.
+
+#Apron
+
+The implementation contains class Apron. This relies on Apron v. 0.9.12. The Java interface consists of 2 jar files (in core\lib), and it needs to access the binaries of Apron. Therefore it is necessary to compile Apron (see https://github.com/antoinemine/apron) on the machine one wants to run the analysis, and pass the path to the installation directory (e.g., /usr/local/lib) through the environment variable LD_LIBRARY_PATH. 

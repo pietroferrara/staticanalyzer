@@ -20,8 +20,7 @@ import it.unive.dais.staticanalyzer.parser.java.generated.JavaParserBaseVisitor;
 public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 	
 	@Override
-	public CFG visitMethodBody(MethodBodyContext ctx) {
-		BlockContext block = ctx.block();
+	public CFG visitBlock(BlockContext block) {
 		CFG result = new CFG();
 		for(BlockStatementContext child : block.blockStatement())
 			try {
@@ -30,6 +29,11 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 				throw new RuntimeException("Failure when building up the CFG of the body", e);
 			}
 		return result;
+	}
+	
+	@Override
+	public CFG visitMethodBody(MethodBodyContext ctx) {
+		return this.visit(ctx.block());
 	}
 	
 	@Override
@@ -95,18 +99,17 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 			try {
 				CFG condition = this.visitParExpression(ctx.parExpression());
 				CFG thenbranch = this.visitStatement(ctx.statement(0));
-				CFG elsebranch = ctx.statement().size()==2 ? this.visitStatement(ctx.statement(1)) : null;
+				CFG elsebranch = ctx.statement().size()==2 ? this.visitStatement(ctx.statement(1)) : new CFG(new SkipStatement());
 				CFG result = new CFG();
 				result.append(condition, null);
 				Statement afterCondition = result.getLastAdded();
 				result.append(thenbranch, true);
 				Statement lastAfterThen = result.getLastAdded();
-				if(elsebranch!=null)
-					result.append(elsebranch, afterCondition, false);
+				result.append(elsebranch, afterCondition, false);
 				SkipStatement joinStatement = new SkipStatement();
 				if(! result.getLastAdded().isTerminatingStatement()) 
 					result.append(joinStatement);
-				if(! lastAfterThen.isTerminatingStatement())
+				if(! lastAfterThen.isTerminatingStatement() && elsebranch!=null)
 					result.addAndCheckEdge(lastAfterThen, joinStatement, null);
 				return result;
 			} catch (ParsingException e) {
@@ -122,6 +125,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 				CFG result = new CFG();
 				result.append(condition, null);
 				result.append(body, true);
+				result.append(new SkipStatement());
 				result.addAndCheckEdge(result.getLastAdded(), condition.getEntryPoint(), null);
 				Statement skip = new SkipStatement();
 				result.append(new CFG(skip), condition.getLastAdded(), false);

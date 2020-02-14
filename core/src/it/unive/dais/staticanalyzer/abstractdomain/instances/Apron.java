@@ -1,5 +1,6 @@
 package it.unive.dais.staticanalyzer.abstractdomain.instances;
 
+import it.unive.dais.staticanalyzer.AnalysisConstants;
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.cfg.Type;
@@ -14,6 +15,7 @@ import it.unive.dais.staticanalyzer.cfg.expression.NegatedBooleanExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.NumericalComparisonExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
+import it.unive.dais.staticanalyzer.cfg.statement.ReturnStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.SkipStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
@@ -83,7 +85,11 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 				Assignment assignment = (Assignment) st;
 				String assignedVariable = assignment.getAssignedVariable().getName();
 				Var variable = new StringVar(assignedVariable);
-				return new Apron(state.assignCopy(manager, variable, new Texpr1Intern(state.getEnvironment(), convertExpressionToApronFormat(((Assignment) st).getExpression())), null));
+				if(AnalysisConstants.isForget(assignment.getExpression()))
+					return new Apron(state.forgetCopy(manager, variable, false));
+				else if(st instanceof ReturnStatement && assignment.getExpression()==null)
+					return new Apron(state);
+				else return new Apron(state.assignCopy(manager, variable, new Texpr1Intern(state.getEnvironment(), convertExpressionToApronFormat(assignment.getExpression())), null));
 			}
 			if(st instanceof Expression)
 				return new Apron(state);
@@ -101,9 +107,33 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 				return new Apron(state.meetCopy(manager, convertNumericalComparisonToApronFormat((NumericalComparisonExpression) expr)));
 			else if(expr instanceof NegatedBooleanExpression) {
 				Expression inner = ((NegatedBooleanExpression) expr).getExpression();
+				if(inner instanceof NegatedBooleanExpression)
+					return assume(((NegatedBooleanExpression) inner).getExpression());
 				if(inner instanceof NumericalComparisonExpression)
 					return assume(((NumericalComparisonExpression) inner).negate());
+				if(inner instanceof BooleanExpression)
+					return assume(((BooleanExpression) inner).negate());
+				if(inner instanceof VariableIdentifier)
+					return new Apron(state);//TODO: We do not track information about Boolean variables
+				else throw new UnsupportedOperationException("Assumption of the negation of expression "+inner.getClass().getTypeName()+" not yet supported");
 			}
+			else if(expr instanceof BooleanExpression) {
+				BooleanExpression bexp = (BooleanExpression) expr;
+				Apron left, right;
+				switch(bexp.getOperator()) {
+					case "&&":
+						left = this.assume(bexp.getLeft()); 
+						right = this.assume(bexp.getRight());
+						return new Apron(left.state.meetCopy(manager, right.state));
+					case "||":
+						left = this.assume(bexp.getLeft()); 
+						right = this.assume(bexp.getRight());
+						return new Apron(left.state.joinCopy(manager, right.state));
+					default: new UnsupportedOperationException("Boolean operator "+bexp.getOperator()+" not yet supported"); 
+				}
+			}
+			else if(expr instanceof VariableIdentifier)//TODO: We do not track information about Boolean variables
+				return new Apron(state);
 		}
 		catch(ApronException e) {
 			throw new UnsupportedOperationException("Apron library crashed", e);
