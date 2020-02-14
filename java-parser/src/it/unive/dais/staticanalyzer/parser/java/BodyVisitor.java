@@ -53,8 +53,6 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 	
 	@Override
 	public CFG visitStatement(StatementContext ctx) {
-		if(ctx.ASSERT()!=null)
-			throw new UnsupportedOperationException("Assert statements not yet supported");
 		if(ctx.DO()!=null)
 			throw new UnsupportedOperationException("Do-while statements not yet supported");
 		if(ctx.TRY()!=null)
@@ -73,6 +71,11 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 			throw new UnsupportedOperationException("Labels not yet supported");
 		if(ctx.FOR()!=null) 
 			throw new UnsupportedOperationException("For statements not yet supported");
+		
+		if(ctx.ASSERT()!=null) {
+			return new CFG(new AssertStatement(this.visitExpression(ctx.expression(0))));
+		}
+		
 		
 		if(ctx.block() != null)
 			return this.visitBlock(ctx.block());

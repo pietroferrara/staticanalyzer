@@ -6,7 +6,7 @@ import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.expression.NegatedBooleanExpression;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
-public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T>> implements Lattice<AbstractAnalysisState<T>> {
+public final class AbstractAnalysisState<T extends Lattice<T> & SemanticDomain<T>> implements Lattice<AbstractAnalysisState<T>> {
 	private final Expression currentExpression;
 	private final T abstractState;
 	
@@ -20,7 +20,7 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 	}
 	
 	private boolean isBottom() {
-		return currentExpression == null && abstractState == null;
+		return currentExpression == null && getSemanticDomainState() == null;
 	}
 	
 	@Override
@@ -28,7 +28,7 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 		if(this.isBottom()) return other;
 		if(other == null || other.isBottom()) return this;
 		assertEquals(currentExpression, other.currentExpression);
-		return new AbstractAnalysisState<T>(currentExpression, this.abstractState.lub(other.abstractState));
+		return new AbstractAnalysisState<T>(currentExpression, this.getSemanticDomainState().lub(other.getSemanticDomainState()));
 	}
 
 	@Override
@@ -36,7 +36,7 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 		if(this.isBottom()) return true;
 		if(other == null || other.isBottom()) return false;
 		assertEquals(currentExpression, other.currentExpression);
-		return this.abstractState.lessOrEqual(other.abstractState);
+		return this.getSemanticDomainState().lessOrEqual(other.getSemanticDomainState());
 	}
 
 	@Override
@@ -44,13 +44,13 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 		if(this.isBottom()) return succ;
 		if(succ.isBottom()) return this;
 		assertEquals(currentExpression, succ.currentExpression);
-		return new AbstractAnalysisState<T>(currentExpression, this.abstractState.widening(succ.abstractState));
+		return new AbstractAnalysisState<T>(currentExpression, this.getSemanticDomainState().widening(succ.getSemanticDomainState()));
 	}
 
 	
 	public AbstractAnalysisState<T> smallStepSemantics(Statement st) {
 		if(this.isBottom()) return this.bottom();
-		T newAbstractState = abstractState.smallStepSemantics(st);
+		T newAbstractState = getSemanticDomainState().smallStepSemantics(st);
 		if(st instanceof Expression)
 			return new AbstractAnalysisState<T>((Expression) st, newAbstractState);
 		else
@@ -59,19 +59,23 @@ public final class AbstractAnalysisState<T extends SemanticDomain<T> & Lattice<T
 
 	public AbstractAnalysisState<T> assumeExpressionHolds() {
 		if(this.isBottom()) return this.bottom();
-		T newAbstractState = abstractState.assume(this.currentExpression);
+		T newAbstractState = getSemanticDomainState().assume(this.currentExpression);
 		return new AbstractAnalysisState<T>(null, newAbstractState);
 	}
 
 	public AbstractAnalysisState<T> assumeExpressionDoesNotHold() {
 		if(this.isBottom()) return this.bottom();
-		T newAbstractState = abstractState.assume(new NegatedBooleanExpression(this.currentExpression, this.currentExpression.getLine(), this.currentExpression.getColumn()));
+		T newAbstractState = getSemanticDomainState().assume(new NegatedBooleanExpression(this.currentExpression, this.currentExpression.getLine(), this.currentExpression.getColumn()));
 		return new AbstractAnalysisState<T>(null, newAbstractState);
 	}
 	
 	@Override
 	public String toString() {
 		return "Expression:"+currentExpression+
-				"\nState:\n"+abstractState;
+				"\nState:\n"+getSemanticDomainState();
+	}
+
+	public T getSemanticDomainState() {
+		return abstractState;
 	}
 }
