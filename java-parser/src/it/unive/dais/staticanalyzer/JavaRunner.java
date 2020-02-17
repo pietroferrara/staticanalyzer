@@ -132,7 +132,7 @@ public class JavaRunner {
 					
 				}
 		);
-		try(FileWriter writer = new FileWriter("analysisresult.dot")) {
+		try(FileWriter writer = new FileWriter(output)) {
 			exporter2.exportGraph(analysis.getCfg().getGraph(), writer);
 		}
 		
