@@ -1,5 +1,8 @@
 package it.unive.dais.staticanalyzer.api;
 
+import javax.xml.bind.annotation.XmlAttribute;
+import javax.xml.bind.annotation.XmlElement;
+
 public class Warning {
 	private final int line, column;
 	private final String message;
@@ -10,6 +13,21 @@ public class Warning {
 		this.message = message;
 	}
 
+	@XmlAttribute
+	public int getLine() {
+		return line;
+	}
+
+	@XmlAttribute
+	public int getColumn() {
+		return column;
+	}
+
+	@XmlElement
+	public String getMessage() {
+		return message;
+	}
+	
 	@Override
 	public int hashCode() {
 		final int prime = 31;

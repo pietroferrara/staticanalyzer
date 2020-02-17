@@ -6,6 +6,8 @@ import java.io.IOException;
 import java.util.Collection;
 import java.util.logging.Logger;
 
+import javax.xml.bind.JAXBException;
+
 import org.apache.commons.cli.CommandLine;
 import org.apache.commons.cli.CommandLineParser;
 import org.apache.commons.cli.DefaultParser;
@@ -24,7 +26,10 @@ import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron.NumericalDoma
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Environment;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.IntegerNumericalConstantDomain;
+import it.unive.dais.staticanalyzer.api.AnalysisOptions;
+import it.unive.dais.staticanalyzer.api.AnalysisResult;
 import it.unive.dais.staticanalyzer.api.Warning;
+import it.unive.dais.staticanalyzer.api.XmlUtility;
 import it.unive.dais.staticanalyzer.cfg.CFG;
 import it.unive.dais.staticanalyzer.cfg.CFGAnalysisResults;
 import it.unive.dais.staticanalyzer.cfg.ParsingException;
@@ -38,13 +43,21 @@ import it.unive.dais.staticanalyzer.property.GenericSingleStatementChecker;
 public class JavaRunner {
 	final static Logger logger = Logger.getLogger(CFGAnalysisResults.class.getName());
 
-	public static void main(String[] args) throws IOException {
+	public static void main(String[] args) throws IOException, JAXBException {
 		CommandLineParser parser = new DefaultParser();
 		try {
 			CommandLine cmd = parser.parse(getOptions(), args);
 			if(cmd.hasOption('h'))
 				printHelp();
-			else runAnalysis(CLIoptionsToStructuredOptions(cmd));
+			else {
+				AnalysisOptions analysisOptions = CLIoptionsToStructuredOptions(cmd);
+				AnalysisResult analysisResults = runAnalysis(analysisOptions);
+				if(cmd.hasOption('a'))
+					XmlUtility.writeAnalysisOptions(cmd.getOptionValue('a'), analysisOptions);
+				if(cmd.hasOption('r'))
+					XmlUtility.writeAnalysisResult(cmd.getOptionValue('r'), analysisResults);
+						
+			}
 		}
 		catch(ParseException e) {
 			System.err.println(e.getMessage());
@@ -52,11 +65,11 @@ public class JavaRunner {
 		}
 	}
 	
-	private static void runAnalysis(it.unive.dais.staticanalyzer.Options clIoptionsToStructuredOptions) throws IOException, ParseException {
-		FileInputStream stream = new FileInputStream(clIoptionsToStructuredOptions.getInput());
+	private static AnalysisResult runAnalysis(it.unive.dais.staticanalyzer.api.AnalysisOptions analysisOptions) throws IOException, ParseException {
+		FileInputStream stream = new FileInputStream(analysisOptions.getInput());
 		logger.info("Building up the CFG");
 		CFG cfg = new BodyParser(stream).parse();
-		String cfgOutput = clIoptionsToStructuredOptions.getCfg();
+		String cfgOutput = analysisOptions.getCfg();
 		if(cfgOutput != null) {
 			dumpCFG(cfg, cfgOutput);
 			logger.info("CFG dumped to "+cfgOutput);
@@ -66,14 +79,14 @@ public class JavaRunner {
 
 		logger.info("Starting the analysis");
 		CFGAnalysisResults analysis =
-				CFGAnalysisResults.computeFixpoint(cfg, getAbstractState(clIoptionsToStructuredOptions.getDomain()));
+				CFGAnalysisResults.computeFixpoint(cfg, getAbstractState(analysisOptions.getDomain()));
 		logger.info("Analysis ended");		
 		
-		dumpOutput(analysis, clIoptionsToStructuredOptions.getOutput());
-		logger.info("Abstract results dumped to "+clIoptionsToStructuredOptions.getOutput());
+		dumpOutput(analysis, analysisOptions.getOutput());
+		logger.info("Abstract results dumped to "+analysisOptions.getOutput());
 		
-		Checker c = getChecker(clIoptionsToStructuredOptions.getChecker());
-		logger.info("Applying checker "+clIoptionsToStructuredOptions.getChecker());
+		Checker c = getChecker(analysisOptions.getChecker());
+		logger.info("Applying checker "+analysisOptions.getChecker());
 		Collection<Warning> warns = c.check(analysis);
 		if(warns.size()==0) {
 			logger.info("No warning produced by the analysis");
@@ -83,6 +96,7 @@ public class JavaRunner {
 			for(Warning w : warns)
 				logger.info(w.toString());
 		}
+		return new AnalysisResult(analysisOptions, warns);
 	}
 
 	private static void dumpOutput(
@@ -174,8 +188,8 @@ public class JavaRunner {
 		}
 	}
 
-	private static it.unive.dais.staticanalyzer.Options CLIoptionsToStructuredOptions(CommandLine cmd) {
-		return new it.unive.dais.staticanalyzer.Options(cmd.getOptionValue("i"), cmd.getOptionValue("o"), cmd.getOptionValue("cfg"), cmd.getOptionValue("d"), cmd.getOptionValue("c"));
+	private static it.unive.dais.staticanalyzer.api.AnalysisOptions CLIoptionsToStructuredOptions(CommandLine cmd) {
+		return new it.unive.dais.staticanalyzer.api.AnalysisOptions(cmd.getOptionValue("i"), cmd.getOptionValue("o"), cmd.getOptionValue("cfg"), cmd.getOptionValue("d"), cmd.getOptionValue("c"));
 	}
 
 	private static void printHelp() {
@@ -187,11 +201,22 @@ public class JavaRunner {
 	private static Options getOptions() {
 		Option input = Option.builder("i").argName("input file").desc("Input file").longOpt("input").hasArg(true).required(true).build();
 		Option cfg = Option.builder("cfg").argName("cfg file").desc("Control flow graph output dot file").longOpt("controlflowgraph").hasArg(true).required(false).build();
-		Option output = Option.builder("o").argName("output file").desc("Output dot file containing analysis results").longOpt("output").hasArg(true).required(false).build();
+		Option output = Option.builder("o").argName("output file").desc("Output dot file containing detailed abstract analysis results").longOpt("output").hasArg(true).required(false).build();
 		Option domain = Option.builder("d").argName("abstract domain").desc("Abstract domain for the analysis").longOpt("domain").hasArg(true).required(true).build();
 		Option checker = Option.builder("c").argName("checker").desc("Property checked after the analysis on the abstract results").longOpt("checker").hasArg(true).required(true).build();
+
+		Option xmlAnalysisOptions = Option.builder("a").argName("analysis options xml output file").desc("Output xml file of the analysis options").longOpt("xmlanalysisoptions").hasArg(true).required(false).build();
+		Option xmlAnalysisResults = Option.builder("r").argName("analysis results xml output file").desc("Output xml file of the analysis results").longOpt("xmlanalysisresults").hasArg(true).required(false).build();
 		Option help = Option.builder("h").desc("Print this help").longOpt("help").hasArg(false).required(false).build();
-		return new Options().addOption(checker).addOption(input).addOption(cfg).addOption(output).addOption(domain).addOption(help);
+		return new Options()
+				.addOption(xmlAnalysisOptions)
+				.addOption(xmlAnalysisResults)
+				.addOption(checker)
+				.addOption(input)
+				.addOption(cfg)
+				.addOption(output)
+				.addOption(domain)
+				.addOption(help);
 	}
 	
 }
