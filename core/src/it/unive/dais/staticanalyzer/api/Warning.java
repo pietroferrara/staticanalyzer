@@ -43,7 +43,7 @@ public class Warning {
 
 	@Override
 	public String toString() {
-		return "At line " + line + ", column" + column + ": " + message;
+		return "At line " + line + ", column " + column + ": " + message;
 	}
 	
 	

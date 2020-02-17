@@ -1,13 +1,14 @@
 package it.unive.dais.staticanalyzer;
 
 public class Options {
-	private String input, output, cfg, domain;
+	private String input, output, cfg, domain, checker;
 
-	public Options(String input, String output, String cfg, String domain) {
+	public Options(String input, String output, String cfg, String domain, String checker) {
 		this.setInput(input);
 		this.output = output;
 		this.cfg = cfg;
 		this.domain = domain;
+		this.checker = checker;
 	}
 
 	public String getInput() {
@@ -24,6 +25,10 @@ public class Options {
 
 	public String getDomain() {
 		return domain;
+	}
+
+	public String getChecker() {
+		return checker;
 	}
 
 	public String getOutput() {

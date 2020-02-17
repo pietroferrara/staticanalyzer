@@ -4,6 +4,7 @@ import org.antlr.v4.runtime.tree.*;
 
 import it.unive.dais.staticanalyzer.cfg.*;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
+import it.unive.dais.staticanalyzer.cfg.statement.AssertStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.ReturnStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.SkipStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
@@ -73,7 +74,11 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 			throw new UnsupportedOperationException("For statements not yet supported");
 		
 		if(ctx.ASSERT()!=null) {
-			return new CFG(new AssertStatement(this.visitExpression(ctx.expression(0))));
+			try {
+				return new CFG(new AssertStatement(GenericVisitor.instance.visitExpression(ctx.expression(0)), ctx.start.getLine(), ctx.start.getStartIndex()));
+			} catch (ParsingException e) {
+				throw new UnsupportedOperationException("Parsing of assert statement "+ctx.getText()+" failed");
+			}
 		}
 		
 		

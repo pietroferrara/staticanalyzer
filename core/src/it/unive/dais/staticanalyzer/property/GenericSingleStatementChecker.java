@@ -18,8 +18,11 @@ public class GenericSingleStatementChecker<T extends SingleStatementChecker> imp
 	@Override
 	public Collection<Warning> check(CFGAnalysisResults results) {
 		Set<Warning> result = new HashSet<>();
-		for(Statement st : results.getCfg().getGraph().vertexSet())
-			result.addAll(singleStatementChecker.check(st, results.getEntryState(st)));
+		for(Statement st : results.getCfg().getGraph().vertexSet()) {
+			Collection<Warning> singlelineresults = singleStatementChecker.check(st, results.getEntryState(st));
+			if(singlelineresults!=null && singlelineresults.size()>0)
+				result.addAll(singlelineresults);
+		}
 		return result;
 	}
 
