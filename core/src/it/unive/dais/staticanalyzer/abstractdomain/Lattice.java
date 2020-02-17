@@ -7,5 +7,4 @@ public interface Lattice<T extends Lattice<T>> {
 	public T widening(T succ);
 	public T bottom();
 	
-	
 }

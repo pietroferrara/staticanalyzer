@@ -53,5 +53,10 @@ public final class Environment<T extends NonRelationalDomain <T>> extends Functi
 		return new Environment<>(valueDomain, function);
 	}
 
+	@Override
+	public boolean satisfy(Expression currentExpression) {
+		//TODO: to be refined
+		return false;
+	}
 
 }

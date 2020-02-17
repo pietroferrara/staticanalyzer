@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<analysisResult>
+    <options checker="AssertChecker" domain="Apron:Box" input="./test-res/code/apron/test3_intervals.java"/>
+    <warnings>
+        <warning column="228" line="17">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="252" line="18">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="78" line="7">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="56" line="6">
+            <message>This assert statement might not hold</message>
+        </warning>
+    </warnings>
+</analysisResult>

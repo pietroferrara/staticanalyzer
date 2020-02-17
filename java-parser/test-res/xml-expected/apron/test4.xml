@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<analysisResult>
+    <options checker="AssertChecker" domain="Apron:Octagon" input="./test-res/code/apron/test4_octagons.java"/>
+    <warnings>
+        <warning column="61" line="6">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="230" line="15">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="157" line="11">
+            <message>This assert statement might not hold</message>
+        </warning>
+    </warnings>
+</analysisResult>

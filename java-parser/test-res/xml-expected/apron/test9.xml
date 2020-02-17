@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<analysisResult>
+    <options checker="AssertChecker" domain="Apron:PplPoly" input="./test-res/code/apron/test9_polyhedra.java"/>
+    <warnings>
+        <warning column="227" line="14">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="182" line="13">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="292" line="18">
+            <message>This assert statement might not hold</message>
+        </warning>
+        <warning column="139" line="10">
+            <message>This assert statement might not hold</message>
+        </warning>
+    </warnings>
+</analysisResult>

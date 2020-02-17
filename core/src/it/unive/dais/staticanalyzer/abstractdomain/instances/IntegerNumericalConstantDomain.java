@@ -47,6 +47,7 @@ public class IntegerNumericalConstantDomain implements NonRelationalDomain<Integ
 		result.bottom = true;
 		return result;
 	}
+	
 	@Override
 	public IntegerNumericalConstantDomain eval(Expression expr, Environment<IntegerNumericalConstantDomain> env) {
 		if(expr instanceof IntegerConstant)

@@ -7,4 +7,6 @@ public interface SemanticDomain<T extends SemanticDomain<T>> {
 	public T smallStepSemantics(Statement st);
 
 	public T assume(Expression currentExpression);
+	
+	public boolean satisfy(Expression currentExpression);
 }

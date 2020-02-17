@@ -15,7 +15,47 @@ public class Tests {
 
 
 	@Test
-	public void simpleTest() throws FileNotFoundException, IOException, ParseException, JAXBException {
-		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("C:\\Users\\PietroFerrara\\analyzer\\java-parser\\results\\results.xml")));
+	public void Apron_test1() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test1.xml")));
+	}
+	
+	@Test
+	public void Apron_test2() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test2.xml")));
+	}
+	
+	@Test
+	public void Apron_test3() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test3.xml")));
+	}
+	
+	@Test
+	public void Apron_test4() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test4.xml")));
+	}
+	
+	@Test
+	public void Apron_test5() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test5.xml")));
+	}
+	
+	@Test
+	public void Apron_test6() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test6.xml")));
+	}
+
+	@Test
+	public void Apron_test7() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test7.xml")));
+	}
+
+	@Test
+	public void Apron_test8() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test8.xml")));
+	}
+
+	@Test
+	public void Apron_test9() throws FileNotFoundException, IOException, ParseException, JAXBException {
+		Assert.assertTrue(Comparator.runAndCompare(XmlUtility.readAnalysisResult("./test-res/xml-expected/apron/test9.xml")));
 	}
 }

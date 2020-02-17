@@ -3,6 +3,7 @@ package it.unive.dais.staticanalyzer.abstractdomain.instances;
 import it.unive.dais.staticanalyzer.AnalysisConstants;
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
+import it.unive.dais.staticanalyzer.cfg.CFGAnalysisResults;
 import it.unive.dais.staticanalyzer.cfg.Type;
 import it.unive.dais.staticanalyzer.cfg.Type.*;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
@@ -20,11 +21,13 @@ import it.unive.dais.staticanalyzer.cfg.statement.SkipStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
 
+import java.util.logging.Logger;
 
 import apron.*;
 import gmp.Mpfr;
 
 public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
+	final static Logger logger = Logger.getLogger(Apron.class.getName());
 
 	public static Manager manager;
 	
@@ -36,7 +39,7 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	
 	public static void setManager(NumericalDomain numericalDomain) {
 		if(manager!=null)
-			throw new UnsupportedOperationException("The Apron manager can be set only once");
+			logger.warning("Re-setting the manager! Allowed only in tests");
 		switch(numericalDomain) {
 			case Box: manager=new Box(); break;
 			case Octagon: manager=new Octagon(); break;
@@ -140,6 +143,30 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 		}
 		throw new UnsupportedOperationException("Assumption of expression "+expr.getClass().getTypeName()+" not yet supported");
 	}
+
+	
+	@Override
+	public boolean satisfy(Expression expr) {
+		if(expr instanceof NumericalComparisonExpression)
+			try {
+				return state.satisfy(manager, convertNumericalComparisonToApronFormat((NumericalComparisonExpression) expr));
+			} catch (ApronException e) {
+				throw new UnsupportedOperationException("Apron library crashed", e);
+			}
+		else if(expr instanceof NegatedBooleanExpression) {
+			Expression inner = ((NegatedBooleanExpression) expr).getExpression();
+			if(inner instanceof NegatedBooleanExpression)
+				return satisfy(((NegatedBooleanExpression) inner).getExpression());
+			if(inner instanceof NumericalComparisonExpression)
+				return satisfy(((NumericalComparisonExpression) inner).negate());
+			if(inner instanceof BooleanExpression)
+				return satisfy(((BooleanExpression) inner).negate());
+			if(inner instanceof VariableIdentifier)
+				return false;//TODO: We do not track information about Boolean variables
+			else throw new UnsupportedOperationException("Assumption of the negation of expression "+inner.getClass().getTypeName()+" not yet supported");
+		}
+		throw new UnsupportedOperationException("Checking if expression "+expr.getClass().getCanonicalName()+" holds is not yet supported by Apron");
+	}
 	
 	private Tcons1 convertNumericalComparisonToApronFormat(NumericalComparisonExpression expr) {
 		Expression combinedExpr = new BinaryArithmeticExpression(expr.getLeft(), expr.getRight(), "-", expr.getLine(), expr.getColumn()); //Apron supports only "expr <comparison> 0", so we need to move everything on the left sode 
@@ -147,6 +174,7 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 			case "==":
 			case "!=":
 			case ">":
+				// TODO Auto-generated method stub
 			case ">=": return new Tcons1(state.getEnvironment(), convertComparisonOperator(expr.getOperator()), convertExpressionToApronFormat(combinedExpr));
 			//For the other cases Need to revert the operator since Apron has a limited support for comparison operators
 			case "<": combinedExpr = new BinaryArithmeticExpression(new IntegerConstant(0, combinedExpr.getLine(), combinedExpr.getColumn()), combinedExpr, "-", combinedExpr.getLine(), combinedExpr.getColumn());
@@ -250,5 +278,5 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	public String toString() {
 		return state.toString();
 	}
-
+	
 }

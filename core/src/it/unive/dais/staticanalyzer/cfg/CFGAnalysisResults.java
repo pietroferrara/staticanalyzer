@@ -119,6 +119,11 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 		result.function = null;
 		return result;
 	}
+	
+	@Override
+	public boolean isBottom() {
+		return this.function == null;
+	}
 
 
 	public CFG getCfg() {

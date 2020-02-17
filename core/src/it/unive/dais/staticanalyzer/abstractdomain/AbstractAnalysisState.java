@@ -19,6 +19,7 @@ public final class AbstractAnalysisState<T extends Lattice<T> & SemanticDomain<T
 		return new AbstractAnalysisState<>(null, null);
 	}
 	
+	
 	private boolean isBottom() {
 		return currentExpression == null && getSemanticDomainState() == null;
 	}
