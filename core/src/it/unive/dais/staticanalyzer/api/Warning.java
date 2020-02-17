@@ -25,6 +25,8 @@ public class Warning {
 		this.message = message;
 	}
 
+	private Warning() {}
+	
 	@XmlAttribute
 	public int getLine() {
 		return line;

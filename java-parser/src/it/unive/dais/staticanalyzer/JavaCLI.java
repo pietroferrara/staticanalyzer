@@ -82,7 +82,8 @@ public class JavaCLI {
 				CFGAnalysisResults.computeFixpoint(cfg, getAbstractState(analysisOptions.getDomain()));
 		logger.info("Analysis ended");		
 		
-		dumpOutput(analysis, analysisOptions.getOutput());
+		if(analysisOptions.getOutput()!=null && ! analysisOptions.getOutput().isEmpty())
+			dumpOutput(analysis, analysisOptions.getOutput());
 		logger.info("Abstract results dumped to "+analysisOptions.getOutput());
 		
 		Checker c = getChecker(analysisOptions.getChecker());
