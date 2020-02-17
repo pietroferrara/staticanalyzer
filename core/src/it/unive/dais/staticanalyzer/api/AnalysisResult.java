@@ -8,6 +8,14 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 @XmlRootElement
 public class AnalysisResult {
+	public void setOptions(AnalysisOptions options) {
+		this.options = options;
+	}
+
+	public void setWarnings(Collection<Warning> warnings) {
+		this.warnings = warnings;
+	}
+
 	private AnalysisOptions options;
 	private Collection<Warning> warnings;
 	

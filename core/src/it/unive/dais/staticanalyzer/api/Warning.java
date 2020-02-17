@@ -4,8 +4,20 @@ import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
 public class Warning {
-	private final int line, column;
-	private final String message;
+	private int line, column;
+	private String message;
+
+	public void setLine(int line) {
+		this.line = line;
+	}
+
+	public void setColumn(int column) {
+		this.column = column;
+	}
+
+	public void setMessage(String message) {
+		this.message = message;
+	}
 
 	public Warning(int line, int column, String message) {
 		this.line = line;
@@ -64,6 +76,4 @@ public class Warning {
 		return "At line " + line + ", column " + column + ": " + message;
 	}
 	
-	
-
 }

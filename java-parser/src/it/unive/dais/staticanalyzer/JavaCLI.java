@@ -40,7 +40,7 @@ import it.unive.dais.staticanalyzer.property.Checker;
 import it.unive.dais.staticanalyzer.property.GenericSingleStatementChecker;
 
 
-public class JavaRunner {
+public class JavaCLI {
 	final static Logger logger = Logger.getLogger(CFGAnalysisResults.class.getName());
 
 	public static void main(String[] args) throws IOException, JAXBException {
@@ -53,9 +53,9 @@ public class JavaRunner {
 				AnalysisOptions analysisOptions = CLIoptionsToStructuredOptions(cmd);
 				AnalysisResult analysisResults = runAnalysis(analysisOptions);
 				if(cmd.hasOption('a'))
-					XmlUtility.writeAnalysisOptions(cmd.getOptionValue('a'), analysisOptions);
+					XmlUtility.writeAnalysisOptions(analysisOptions.getXmlanalysisoptionsfile(), analysisOptions);
 				if(cmd.hasOption('r'))
-					XmlUtility.writeAnalysisResult(cmd.getOptionValue('r'), analysisResults);
+					XmlUtility.writeAnalysisResult(analysisOptions.getXmlanalysisresultfile(), analysisResults);
 						
 			}
 		}
@@ -65,7 +65,7 @@ public class JavaRunner {
 		}
 	}
 	
-	private static AnalysisResult runAnalysis(it.unive.dais.staticanalyzer.api.AnalysisOptions analysisOptions) throws IOException, ParseException {
+	public static AnalysisResult runAnalysis(it.unive.dais.staticanalyzer.api.AnalysisOptions analysisOptions) throws IOException, ParseException {
 		FileInputStream stream = new FileInputStream(analysisOptions.getInput());
 		logger.info("Building up the CFG");
 		CFG cfg = new BodyParser(stream).parse();
@@ -189,7 +189,7 @@ public class JavaRunner {
 	}
 
 	private static it.unive.dais.staticanalyzer.api.AnalysisOptions CLIoptionsToStructuredOptions(CommandLine cmd) {
-		return new it.unive.dais.staticanalyzer.api.AnalysisOptions(cmd.getOptionValue("i"), cmd.getOptionValue("o"), cmd.getOptionValue("cfg"), cmd.getOptionValue("d"), cmd.getOptionValue("c"));
+		return new it.unive.dais.staticanalyzer.api.AnalysisOptions(cmd.getOptionValue("i"), cmd.getOptionValue("o"), cmd.getOptionValue("cfg"), cmd.getOptionValue("d"), cmd.getOptionValue("c"), cmd.getOptionValue("a"), cmd.getOptionValue("r"));
 	}
 
 	private static void printHelp() {

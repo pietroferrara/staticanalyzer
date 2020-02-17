@@ -1,4 +1,4 @@
 /.metadata
 /java-antlr-parser/target
-/java-parser
+/java-parser/results
 *.class
