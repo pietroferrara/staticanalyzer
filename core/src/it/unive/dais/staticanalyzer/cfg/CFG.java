@@ -1,7 +1,6 @@
 package it.unive.dais.staticanalyzer.cfg;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -11,7 +10,6 @@ import org.jgrapht.graph.DefaultWeightedEdge;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
 public class CFG extends ParsedBlock {
-	private static final long serialVersionUID = -5787684749175918173L;
 	private final DefaultDirectedWeightedGraph<Statement, DefaultWeightedEdge> graph; 
 	
 	//The first statement added to the CFG

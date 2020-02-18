@@ -4,6 +4,8 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
+import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.api.Warning;
 import it.unive.dais.staticanalyzer.cfg.CFGAnalysisResults;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
@@ -16,7 +18,7 @@ public class GenericSingleStatementChecker<T extends SingleStatementChecker> imp
 	}
 
 	@Override
-	public Collection<Warning> check(CFGAnalysisResults results) {
+	public <T1 extends Lattice<T1> & SemanticDomain<T1>> Collection<Warning> check(CFGAnalysisResults<T1> results) {
 		Set<Warning> result = new HashSet<>();
 		for(Statement st : results.getCfg().getGraph().vertexSet()) {
 			Collection<Warning> singlelineresults = singleStatementChecker.check(st, results.getEntryState(st));

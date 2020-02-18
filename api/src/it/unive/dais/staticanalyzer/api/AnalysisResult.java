@@ -19,6 +19,7 @@ public class AnalysisResult {
 	private AnalysisOptions options;
 	private Collection<Warning> warnings;
 	
+	@SuppressWarnings("unused")
 	private AnalysisResult() { }
 	
 	public AnalysisResult(AnalysisOptions options, Collection<Warning> warnings) {

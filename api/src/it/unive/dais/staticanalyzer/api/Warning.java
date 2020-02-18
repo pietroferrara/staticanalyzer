@@ -25,6 +25,7 @@ public class Warning {
 		this.message = message;
 	}
 
+	@SuppressWarnings("unused")
 	private Warning() {}
 	
 	@XmlAttribute

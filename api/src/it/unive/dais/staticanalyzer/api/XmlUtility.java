@@ -22,6 +22,7 @@ public class XmlUtility {
 		marshaller.marshal(data, writer);
 	}
 
+	@SuppressWarnings("unchecked")
 	private static <T> T unmarshal(Class<T> c, Reader reader) throws JAXBException {
 		JAXBContext jaxbContext = JAXBContext.newInstance(c);
 		Unmarshaller unmarshaller = jaxbContext.createUnmarshaller();

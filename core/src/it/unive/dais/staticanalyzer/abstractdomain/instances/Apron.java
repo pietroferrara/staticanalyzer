@@ -3,7 +3,6 @@ package it.unive.dais.staticanalyzer.abstractdomain.instances;
 import it.unive.dais.staticanalyzer.AnalysisConstants;
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
-import it.unive.dais.staticanalyzer.cfg.CFGAnalysisResults;
 import it.unive.dais.staticanalyzer.cfg.Type;
 import it.unive.dais.staticanalyzer.cfg.Type.*;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;

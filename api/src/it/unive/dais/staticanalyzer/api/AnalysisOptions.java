@@ -7,6 +7,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 public class AnalysisOptions {
 	private String input, output, cfg, domain, checker, xmlanalysisoptionsfile, xmlanalysisresultfile;
 	
+	@SuppressWarnings("unused")
 	private AnalysisOptions() {
 		
 	}

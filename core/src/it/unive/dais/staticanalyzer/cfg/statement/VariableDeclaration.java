@@ -1,6 +1,5 @@
 package it.unive.dais.staticanalyzer.cfg.statement;
 
-import it.unive.dais.staticanalyzer.cfg.ParsedBlock;
 import it.unive.dais.staticanalyzer.cfg.Type;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 

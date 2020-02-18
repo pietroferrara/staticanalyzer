@@ -22,6 +22,8 @@ import org.jgrapht.io.IntegerComponentNameProvider;
 import org.jgrapht.io.StringComponentNameProvider;
 
 import it.unive.dais.staticanalyzer.abstractdomain.AbstractAnalysisState;
+import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
+import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron.NumericalDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Environment;
@@ -78,7 +80,7 @@ public class JavaCLI {
 		
 
 		logger.info("Starting the analysis");
-		CFGAnalysisResults analysis =
+		CFGAnalysisResults<?> analysis =
 				CFGAnalysisResults.computeFixpoint(cfg, getAbstractState(analysisOptions.getDomain()));
 		logger.info("Analysis ended");		
 		
@@ -100,8 +102,8 @@ public class JavaCLI {
 		return new AnalysisResult(analysisOptions, warns);
 	}
 
-	private static void dumpOutput(
-			CFGAnalysisResults analysis,
+	private static <T extends Lattice<T> & SemanticDomain<T>> void dumpOutput(
+			CFGAnalysisResults<T> analysis,
 			String output) throws IOException {
 
 		DOTExporter<Statement, DefaultWeightedEdge> exporter2 = new DOTExporter<Statement, DefaultWeightedEdge>(
@@ -146,7 +148,7 @@ public class JavaCLI {
 		}
 	}
 	
-	private static AbstractAnalysisState getAbstractState(String domain) throws ParseException {
+	private static AbstractAnalysisState<?> getAbstractState(String domain) throws ParseException {
 		String[] params = domain.split(":");
 		switch(params[0]) {
 			case "IntegerNumericalConstantDomain": return new AbstractAnalysisState<>(null, new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom()));
