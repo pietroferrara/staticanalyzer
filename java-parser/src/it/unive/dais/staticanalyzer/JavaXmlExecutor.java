@@ -37,7 +37,7 @@ public class JavaXmlExecutor {
 	
 	private static void printHelp() {
 		HelpFormatter formatter = new HelpFormatter();
-	    formatter.printHelp("Analyzer", getOptions());
+	    formatter.printHelp("JavaXmlExecutor", getOptions());
 	}
 
 

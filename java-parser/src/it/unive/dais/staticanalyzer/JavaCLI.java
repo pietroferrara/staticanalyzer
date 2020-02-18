@@ -128,7 +128,7 @@ public class JavaCLI {
 
 	private static void printHelp() {
 		HelpFormatter formatter = new HelpFormatter();
-	    formatter.printHelp("Analyzer", getOptions());
+	    formatter.printHelp("JavaCLI", getOptions());
 	}
 
 
@@ -139,8 +139,8 @@ public class JavaCLI {
 		Option domain = Option.builder("d").argName("abstract domain").desc("Abstract domain for the analysis").longOpt("domain").hasArg(true).required(true).build();
 		Option checker = Option.builder("c").argName("checker").desc("Property checked after the analysis on the abstract results").longOpt("checker").hasArg(true).required(true).build();
 
-		Option xmlAnalysisOptions = Option.builder("a").argName("analysis options xml output file").desc("Output xml file of the analysis options").longOpt("xmlanalysisoptions").hasArg(true).required(false).build();
-		Option xmlAnalysisResults = Option.builder("r").argName("analysis results xml output file").desc("Output xml file of the analysis results").longOpt("xmlanalysisresults").hasArg(true).required(false).build();
+		Option xmlAnalysisOptions = Option.builder("a").argName("analysis options").desc("Output xml file of the analysis options").longOpt("xmloptions").hasArg(true).required(false).build();
+		Option xmlAnalysisResults = Option.builder("r").argName("analysis results").desc("Output xml file of the analysis results").longOpt("xmlresults").hasArg(true).required(false).build();
 		Option help = Option.builder("h").desc("Print this help").longOpt("help").hasArg(false).required(false).build();
 		return new Options()
 				.addOption(xmlAnalysisOptions)

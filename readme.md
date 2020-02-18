@@ -27,17 +27,67 @@ The program under analysis has to be a snippet of Java code between curly bracke
 
 The parser does not support exceptions, objects, and method calls.
 
-The parameters of JavaRunner are the following ones:
+There are two distinct ways to run the analysis.
+
+##JavaCLI
+
+JavaCLI allows the user to specify the different parameters of the analysis (source code file, abstract domain, checker) from the command line.
 
 ```
+usage: JavaCLI
+ -a,--xmloptions <analysis options>   Output xml file of the analysis options
+ -c,--checker <checker>               Property checked after the analysis on the abstract results
  -cfg,--controlflowgraph <cfg file>   Control flow graph output dot file
  -d,--domain <abstract domain>        Abstract domain for the analysis
- -h,--domain                          Print this help
+ -h,--help                            Print this help
  -i,--input <input file>              Input file
- -o,--output <output file>            Output dot file containing analysis esults
+ -o,--output <output file>            Output dot file containing detailed abstract analysis results
+ -r,--xmlresults <analysis results>   Output xml file of the analysis results
 ```
 
-At the end of the analysis, JavaRunner produces a dot file (specified by option -o) with the control flow graph of the analyzed program as well as entry and exit states attached at each program point. In addition, it dumps the control flow graph of the program if option -cfg is specified.
+Parameters -c, -d, and -i are mandatory.
+
+At the end of the analysis, JavaCLI produces a set of warnings that are printed in the console.
+
+##JavaXmlExecutor
+
+JavaXmlExecutor executes the analysis with the options specified in a xml file containing the state of an AnalysisOptions instance.
+
+```
+usage: JavaXmlExecutor
+ -h,--help                            Print this help
+ -s,--spec <xml specification file>   XML file containing the of the analysis
+```
+
+All the options of the analysis have to be contained in the given xml file.
+
+#AnalysisOptions
+
+Class it.unive.dais.staticanalyzer.api.AnalysisOptions allows the user to specify all the options of the analysis in a class or xml file instead of passing them through JuliaCLI.
+
+```
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<analysisOptions checker="AssertChecker" domain="Apron:Box" input="code.java" xmlanalysisresultfile="results.xml"/>
+```
+For instance, the xml file above specifies an analysis of file code.java with the Interval domain (Apron:Box), applying checker AssertChecker, and to dump the analysis results to results.xml.
+
+
+#AnalysisResult
+
+Class it.unive.dais.staticanalyzer.api.AnalysisResult stores the options of the analysis as well as the results (that is, a set of warning). Like class AnalysisOptions, this can be represented as an instance of the class or an xml file.
+
+```
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
+<analysisResult>
+    <options cfg="./results/cfg.dot" checker="AssertChecker" domain="Apron:Box" input="core.java""/>
+    <warnings>
+        <warning column="83" line="8">
+            <message>This assert statement might not hold</message>
+        </warning>
+    </warnings>
+</analysisResult>
+```
+For instance, the xml file above reports the results of an analysis with the options described in the previous section (Interval domain, AssertChecker, and code of file code.java), and that produced a warning at line 8 column 83.
 
 #Apron
 
