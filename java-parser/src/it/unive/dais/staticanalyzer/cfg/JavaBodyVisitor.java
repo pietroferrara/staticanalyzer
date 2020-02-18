@@ -1,4 +1,4 @@
-package it.unive.dais.staticanalyzer.parser.java;
+package it.unive.dais.staticanalyzer.cfg;
 
 import org.antlr.v4.runtime.tree.*;
 
@@ -18,7 +18,7 @@ import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.StatementCo
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.VariableDeclaratorContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParserBaseVisitor;
 
-public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
+public class JavaBodyVisitor extends JavaParserBaseVisitor<CFG> {
 	
 	@Override
 	public CFG visitBlock(BlockContext block) {
@@ -75,7 +75,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 		
 		if(ctx.ASSERT()!=null) {
 			try {
-				return new CFG(new AssertStatement(GenericVisitor.instance.visitExpression(ctx.expression(0)), ctx.start.getLine(), ctx.start.getStartIndex()));
+				return new CFG(new AssertStatement(JavaGenericVisitor.instance.visitExpression(ctx.expression(0)), ctx.start.getLine(), ctx.start.getStartIndex()));
 			} catch (ParsingException e) {
 				throw new UnsupportedOperationException("Parsing of assert statement "+ctx.getText()+" failed");
 			}
@@ -90,7 +90,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 					if(ctx.expression().size()==0)
 						return new CFG(new ReturnStatement(null, ctx.start.getLine(), ctx.start.getStartIndex()));
 					else if(ctx.expression().size()==1)
-						return new CFG(new ReturnStatement(GenericVisitor.instance.visitExpression(ctx.expression().get(0)), ctx.start.getLine(), ctx.start.getStartIndex()));
+						return new CFG(new ReturnStatement(JavaGenericVisitor.instance.visitExpression(ctx.expression().get(0)), ctx.start.getLine(), ctx.start.getStartIndex()));
 					else throw new UnsupportedOperationException("Multiple expressions in a return statement are not supported");
 				} catch (ParsingException e) {
 					throw new UnsupportedOperationException("Parsing of return statement "+ctx.getText()+" failed");
@@ -98,7 +98,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 		
 		if(ctx.statementExpression!=null)
 			try {
-				return new CFG(GenericVisitor.instance.visitOnlyAssignmentInExpression(ctx.statementExpression));
+				return new CFG(JavaGenericVisitor.instance.visitOnlyAssignmentInExpression(ctx.statementExpression));
 			} catch (ParsingException e) {
 				throw new UnsupportedOperationException("Parsing of assignment statement "+ctx.getText()+" failed");
 			}
@@ -152,9 +152,9 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 	@Override
 	public CFG visitLocalVariableDeclaration(LocalVariableDeclarationContext ctx) {
 		CFG result = new CFG(ctx.start.getLine(), ctx.start.getStartIndex());
-		Type t = GenericVisitor.instance.visitTypeType(ctx.typeType());
+		Type t = JavaGenericVisitor.instance.visitTypeType(ctx.typeType());
 		for(VariableDeclaratorContext vardec : ctx.variableDeclarators().variableDeclarator()) {
-			VariableIdentifier varname = GenericVisitor.instance.visitVariableDeclarator(vardec);
+			VariableIdentifier varname = JavaGenericVisitor.instance.visitVariableDeclarator(vardec);
 			try {
 				result.append(new VariableDeclaration(t, varname, ctx.start.getLine(), ctx.start.getStartIndex()));
 			} catch (ParsingException e) {
@@ -167,7 +167,7 @@ public class BodyVisitor extends JavaParserBaseVisitor<CFG> {
 	@Override
 	public CFG visitParExpression(ParExpressionContext ctx) {
 		try {
-			return new CFG(GenericVisitor.instance.visitExpression(ctx.expression()));
+			return new CFG(JavaGenericVisitor.instance.visitExpression(ctx.expression()));
 		} catch (ParsingException e) {
 			throw new UnsupportedOperationException("Parsing of expression "+ctx.getText()+" failed");
 		}

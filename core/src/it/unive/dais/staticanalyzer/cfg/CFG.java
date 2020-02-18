@@ -1,14 +1,25 @@
 package it.unive.dais.staticanalyzer.cfg;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.io.ComponentNameProvider;
+import org.jgrapht.io.DOTExporter;
+import org.jgrapht.io.IntegerComponentNameProvider;
+import org.jgrapht.io.StringComponentNameProvider;
 
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
+/**
+ * The class representing the control flow graph of a program
+ * @author Pietro Ferrara
+ *
+ */
 public class CFG extends ParsedBlock {
 	private final DefaultDirectedWeightedGraph<Statement, DefaultWeightedEdge> graph; 
 	
@@ -17,11 +28,11 @@ public class CFG extends ParsedBlock {
 	//The last statement added to the CFG
 	private Statement lastAdded;
 	
-	public CFG(int line, int column) {
+	CFG(int line, int column) {
 		super(line, column);
 		this.graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 	}
-	public CFG(Statement st) throws ParsingException {
+	CFG(Statement st) throws ParsingException {
 		super(st.getLine(), st.getColumn());
 		this.graph = new DefaultDirectedWeightedGraph<>(DefaultWeightedEdge.class);
 		addAndCheckVertex(st);
@@ -54,7 +65,7 @@ public class CFG extends ParsedBlock {
 	}
 
 	
-	public void append(Statement statement) throws ParsingException {
+	void append(Statement statement) throws ParsingException {
 		//empty statement
 		if(statement == null)
 			return;
@@ -67,16 +78,16 @@ public class CFG extends ParsedBlock {
 	}
 	
 
-	public void append(CFG visitBlockStatement, Statement from, Boolean condition) throws ParsingException {
+	void append(CFG visitBlockStatement, Statement from, Boolean condition) throws ParsingException {
 		this.lastAdded = from;
 		this.append(visitBlockStatement, condition);
 	}
 	
-	public DefaultDirectedWeightedGraph<Statement, DefaultWeightedEdge> getGraph() {
+	DefaultDirectedWeightedGraph<Statement, DefaultWeightedEdge> getGraph() {
 		return graph;
 	}
 
-	public void append(CFG visitBlockStatement, Boolean condition) throws ParsingException {
+	void append(CFG visitBlockStatement, Boolean condition) throws ParsingException {
 		//empty CFG
 		if(visitBlockStatement == null || visitBlockStatement.isEmpty())
 			return;
@@ -101,7 +112,7 @@ public class CFG extends ParsedBlock {
 		return getEntryPoint() == null && getLastAdded() == null && this.isEmpty();
 	}
 
-	public void addAndCheckEdge(Statement from, Statement to, Boolean weight) throws ParsingException {
+	void addAndCheckEdge(Statement from, Statement to, Boolean weight) throws ParsingException {
 		if(from.isTerminatingStatement())
 			throw new UnsupportedOperationException("It is not allowed to add outcoming edges from terminating statements");
 		DefaultWeightedEdge edge = graph.addEdge(from, to); 
@@ -110,7 +121,7 @@ public class CFG extends ParsedBlock {
 		graph.setEdgeWeight(edge, getWeightFromBoolean(weight));
 	}
 	
-	public static double getWeightFromBoolean(Boolean b) {
+	static double getWeightFromBoolean(Boolean b) {
 		if(b==null)
 			return 0.0;
 		else if(b.booleanValue())
@@ -118,7 +129,7 @@ public class CFG extends ParsedBlock {
 		else return -1.0;
 	}
 	
-	public static Boolean getBooleanFromWeight(double d) throws ParsingException {
+	static Boolean getBooleanFromWeight(double d) throws ParsingException {
 		if(d==0.0)
 			return null;
 		else if(d==1.0)
@@ -128,15 +139,54 @@ public class CFG extends ParsedBlock {
 		else throw new ParsingException("Unkown edge weight: "+d);
 	}
 	
-	private void addAndCheckVertex(Statement v) throws ParsingException {
+	void addAndCheckVertex(Statement v) throws ParsingException {
 		if(! graph.addVertex(v))
 			throw new ParsingException("Vertex "+v.toString()+" already contained in the current CFG");
 	}
-	public Statement getLastAdded() {
+	Statement getLastAdded() {
 		return lastAdded;
 	}
-	public Statement getEntryPoint() {
+	Statement getEntryPoint() {
 		return entryPoint;
+	}
+	
+
+	/**
+	 * Dump the control flow graph to a dot file
+	 * @param cfgOutput the path where the dot file is written
+	 * @throws IOException
+	 */
+	public void dumpToDotFile(String cfgOutput) throws IOException {
+		DOTExporter<Statement, DefaultWeightedEdge> exporter = new DOTExporter<Statement, DefaultWeightedEdge>(
+				new IntegerComponentNameProvider<Statement>(),
+				new StringComponentNameProvider<Statement>(),
+				new ComponentNameProvider<DefaultWeightedEdge>() {
+
+					@Override
+					public String getName(DefaultWeightedEdge component) {
+						Boolean b;
+						try {
+							b = CFG.getBooleanFromWeight(getGraph().getEdgeWeight(component));
+						} catch (ParsingException e) {
+							return "<error>";
+						}
+						if(b==null) return "";
+						else return String.valueOf(b.booleanValue());
+					}
+					
+				}
+		);
+		try(FileWriter writer = new FileWriter(cfgOutput)) {
+			exporter.exportGraph(getGraph(), writer);
+		}
+	}
+	
+	/**
+	 * 
+	 * @return the statements contained in the control flow graph
+	 */
+	public Set<Statement> statements() {
+		return this.graph.vertexSet();
 	}
 	
 }

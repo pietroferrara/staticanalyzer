@@ -1,4 +1,4 @@
-package it.unive.dais.staticanalyzer.parser.java;
+package it.unive.dais.staticanalyzer.cfg;
 
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTree;
@@ -35,11 +35,11 @@ import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.VariableDec
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.VariableDeclaratorIdContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParserBaseVisitor;
 
-public class GenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
+public class JavaGenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 
-	public static final GenericVisitor instance = new GenericVisitor();
+	public static final JavaGenericVisitor instance = new JavaGenericVisitor();
 	
-	private GenericVisitor() {
+	private JavaGenericVisitor() {
 	}
 	
 	@Override

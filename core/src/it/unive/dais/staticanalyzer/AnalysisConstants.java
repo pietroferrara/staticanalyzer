@@ -3,11 +3,24 @@ package it.unive.dais.staticanalyzer;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 
+/**
+ * Constants used by the analysis.
+ * @author Pietro Ferrara
+ *
+ */
 public class AnalysisConstants {
-	public static final int WIDENING_LIMIT = 2;//Number of iterations of the fixpoint algorithm before applying widening
+	/**
+	 * Number of iterations of the fixpoint algorithm before applying widening
+	 */
+	public static final int WIDENING_LIMIT = 2;
 	
 	private static String forgetVariable = "random";//Special variable name representing a random value
 	
+	/**
+	 * 
+	 * @param e an expression
+	 * @return true iff the expression returns a random number.
+	 */
 	public static boolean isForget(Expression e) {
 		if(e instanceof VariableIdentifier)
 			return forgetVariable.equals(((VariableIdentifier) e).getName());

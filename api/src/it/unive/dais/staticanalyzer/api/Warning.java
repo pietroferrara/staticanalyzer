@@ -3,22 +3,45 @@ package it.unive.dais.staticanalyzer.api;
 import javax.xml.bind.annotation.XmlAttribute;
 import javax.xml.bind.annotation.XmlElement;
 
+/**
+ * The class representing a warning
+ * @author Pietro Ferrara
+ *
+ */
 public class Warning {
 	private int line, column;
 	private String message;
 
+	/**
+	 * 
+	 * @param line the line of the code the warning refers to
+	 */
 	public void setLine(int line) {
 		this.line = line;
 	}
 
+	/**
+	 * 
+	 * @param column the column of the code the warning refers to
+	 */
 	public void setColumn(int column) {
 		this.column = column;
 	}
 
+	/**
+	 * 
+	 * @param message the warning message
+	 */
 	public void setMessage(String message) {
 		this.message = message;
 	}
 
+	/**
+	 * 
+	 * @param line the line of the code the warning refers to
+	 * @param column the column of the code the warning refers to
+	 * @param message the warning message
+	 */
 	public Warning(int line, int column, String message) {
 		this.line = line;
 		this.column = column;
@@ -28,16 +51,28 @@ public class Warning {
 	@SuppressWarnings("unused")
 	private Warning() {}
 	
+	/**
+	 * 
+	 * @return the line of the code the warning refers to
+	 */
 	@XmlAttribute
 	public int getLine() {
 		return line;
 	}
 
+	/**
+	 * 
+	 * @return the column of the code the warning refers to
+	 */
 	@XmlAttribute
 	public int getColumn() {
 		return column;
 	}
 
+	/**
+	 * 
+	 * @return the warning message
+	 */
 	@XmlElement
 	public String getMessage() {
 		return message;

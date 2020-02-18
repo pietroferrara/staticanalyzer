@@ -11,8 +11,18 @@ import it.unive.dais.staticanalyzer.cfg.statement.SkipStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
 
+/**
+ * The class representing an environment needed by non relational abstract domains.
+ * @author Pietro Ferrara
+ *
+ * @param <T> The specific type of the non relational abstract domain
+ */
 public final class Environment<T extends NonRelationalDomain <T>> extends FunctionalDomain<String, T, Environment<T>> implements SemanticDomain<Environment<T>> {
 
+	/**
+	 *
+	 * @param domain the non-relational abstract domain
+	 */
 	public Environment(T domain) {
 		super(domain);
 	}

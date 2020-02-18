@@ -1,8 +1,13 @@
 package it.unive.dais.staticanalyzer.cfg;
 
+/**
+ * The class representing types
+ * @author Pietro Ferrara
+ *
+ */
 public abstract class Type extends ParsedBlock {
 	
-	public Type(int line, int column) {
+	Type(int line, int column) {
 		super(line, column);
 	}
 
@@ -16,10 +21,15 @@ public abstract class Type extends ParsedBlock {
 		return this.toString().hashCode();
 	}
 	
+	/**
+	 * Object type
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class ObjectType extends Type {
 		private String typesignature;
 
-		public ObjectType(String typesignature, int line, int column) {
+		ObjectType(String typesignature, int line, int column) {
 			super(line, column);
 			this.typesignature = typesignature;
 		}
@@ -32,12 +42,17 @@ public abstract class Type extends ParsedBlock {
 		
 	}
 
-	public static abstract class PrimitiveType extends Type {
-		public PrimitiveType(int line, int column) {
+	/**
+	 * Primitive types (int, long, double, etc..)
+	 * @author Pietro Ferrara
+	 *
+	 */
+	static abstract class PrimitiveType extends Type {
+		PrimitiveType(int line, int column) {
 			super(line, column);
 		}
 
-		public static PrimitiveType parse(String s, int line, int column) {
+		static PrimitiveType parse(String s, int line, int column) {
 			switch(s) {
 				case "boolean" : return new BooleanType(line, column);
 				case "char" : return new CharType(line, column);
@@ -52,8 +67,13 @@ public abstract class Type extends ParsedBlock {
 		}
 	}
 
+	/**
+	 * boolean
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class BooleanType extends PrimitiveType {
-		public BooleanType(int line, int column) {
+		BooleanType(int line, int column) {
 			super(line, column);
 		}
 
@@ -61,8 +81,14 @@ public abstract class Type extends ParsedBlock {
 			return "bool";
 		}
 	}
+	
+	/**
+	 * char
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class CharType extends PrimitiveType {
-		public CharType(int line, int column) {
+		CharType(int line, int column) {
 			super(line, column);
 		}
 
@@ -70,8 +96,14 @@ public abstract class Type extends ParsedBlock {
 			return "char";
 		}
 	}
+	
+	/**
+	 * byte
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class ByteType extends PrimitiveType {
-		public ByteType(int line, int column) {
+		ByteType(int line, int column) {
 			super(line, column);
 		}
 
@@ -79,8 +111,14 @@ public abstract class Type extends ParsedBlock {
 			return "byte";
 		}
 	}
+	
+	/**
+	 * short
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class ShortType extends PrimitiveType {
-		public ShortType(int line, int column) {
+		ShortType(int line, int column) {
 			super(line, column);
 		}
 
@@ -88,8 +126,14 @@ public abstract class Type extends ParsedBlock {
 			return "short";
 		}
 	}
+	
+	/**
+	 * int
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class IntType extends PrimitiveType {
-		public IntType(int line, int column) {
+		IntType(int line, int column) {
 			super(line, column);
 		}
 
@@ -97,8 +141,14 @@ public abstract class Type extends ParsedBlock {
 			return "int";
 		}
 	}
+	
+	/**
+	 * long
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class LongType extends PrimitiveType {
-		public LongType(int line, int column) {
+		LongType(int line, int column) {
 			super(line, column);
 		}
 
@@ -106,8 +156,14 @@ public abstract class Type extends ParsedBlock {
 			return "long";
 		}
 	}
+	
+	/**
+	 * float
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class FloatType extends PrimitiveType {
-		public FloatType(int line, int column) {
+		FloatType(int line, int column) {
 			super(line, column);
 		}
 
@@ -115,8 +171,14 @@ public abstract class Type extends ParsedBlock {
 			return "float";
 		}
 	}
+	
+	/**
+	 * double
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public static class DoubleType extends PrimitiveType {
-		public DoubleType(int line, int column) {
+		DoubleType(int line, int column) {
 			super(line, column);
 		}
 

@@ -25,17 +25,70 @@ import java.util.logging.Logger;
 import apron.*;
 import gmp.Mpfr;
 
+/**
+ * Numerical abstract domain based on the Apron library.
+ * Note: in order to run the analysis with Apron, it is required to set up the environment variable
+ * LD_LIBRARY_PATH to point to the installation directory of Apron (thus, it is required to compile
+ * and install Apron on the machine the analysis is ran).
+ * @author Pietro Ferrara
+ *
+ */
 public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	final static Logger logger = Logger.getLogger(Apron.class.getName());
 
-	public static Manager manager;
+	private static Manager manager;
 	
 	private final Abstract1 state;
 	
+	/**
+	 * The Aprong numerical domain 
+	 * @author Pietro Ferrara
+	 *
+	 */
 	public enum NumericalDomain {
-	    Box, Octagon, Polka, PolkaEq, PolkaGrid, PplGrid, PplPoly;
+		/**
+		 * Intervals
+		 */
+	    Box, 
+	    
+	    /**
+	     * Octagons
+	     */
+	    Octagon, 
+	    
+	    /**
+	     * Convex polyhedra
+	     */
+	    Polka, 
+	    
+	    /**
+	     * Linear equalities
+	     */
+	    PolkaEq, 
+	    
+	    /**
+	     * Reduced product of the Polka convex polyhedra and PplGrid the linear congruence equalities domains
+	     * Compile Apron with the specific flag for PPL set to 1 in order to use such domain.
+	     */
+	    PolkaGrid, 
+	    
+	    /**
+	     * Parma Polyhedra Library linear congruence equalities domain
+	     * Compile Apron with the specific flag for PPL set to 1 in order to use such domain.
+	     */
+	    PplGrid, 
+	    
+	    /**
+	     * The Parma Polyhedra libraryconvex polyhedra domain
+	     * Compile Apron with the specific flag for PPL set to 1 in order to use such domain.
+	     */
+	    PplPoly;
 	}
 	
+	/**
+	 * 
+	 * @param numericalDomain The specific numerical domain used by the analysis.
+	 */
 	public static void setManager(NumericalDomain numericalDomain) {
 		if(manager!=null)
 			logger.warning("Re-setting the manager! Allowed only in tests");
@@ -51,6 +104,9 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 		}
 	}
 	
+	/**
+	 * Instances the Apron abstract domain. It is required to call setManager before instantating the domain.
+	 */
 	public Apron() {
 		try {
 			String[] vars = {"<ret>"}; //Variable needed to represent the value returned

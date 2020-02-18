@@ -1,11 +1,16 @@
 package it.unive.dais.staticanalyzer.cfg;
 
+import java.io.FileWriter;
+import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.logging.Logger;
 
 import org.jgrapht.graph.DefaultWeightedEdge;
+import org.jgrapht.io.ComponentNameProvider;
+import org.jgrapht.io.DOTExporter;
+import org.jgrapht.io.IntegerComponentNameProvider;
 
 import it.unive.dais.staticanalyzer.AnalysisConstants;
 import it.unive.dais.staticanalyzer.abstractdomain.AbstractAnalysisState;
@@ -14,12 +19,20 @@ import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.generic.FunctionalDomain;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
+/**
+ * The class representing the results of the static analysis on a program represented by a 
+ * control flow graph. For each statement of the cfg, we have an entry and an exit state.
+ * @author Pietro Ferrara
+ *
+ * @param <T> the abstract domain of the analysis
+ */
 public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extends FunctionalDomain<Statement, AbstractAnalysisState<T>, CFGAnalysisResults<T>> {
 	private CFG cfg;
 	AbstractAnalysisState<T> entryState;
 	final static Logger logger = Logger.getLogger(CFGAnalysisResults.class.getName());
 	
-	public CFGAnalysisResults(CFG cfg, AbstractAnalysisState<T> entryState) {
+
+	CFGAnalysisResults(CFG cfg, AbstractAnalysisState<T> entryState) {
 		super(entryState);
 		this.cfg = cfg;
 		this.entryState = entryState;
@@ -33,14 +46,31 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 		this.function = function;
 	}
 	
+	/**
+	 * 
+	 * @param st a statement of the program
+	 * @return the abstract state representing the entry state of the given statement
+	 */
 	public AbstractAnalysisState<T> getEntryState(Statement st) {
 		return this.getState(st);
 	}
 
+	/**
+	 * 
+	 * @param st a statement of the program
+	 * @return the abstract state representing the exit state of the given statement
+	 */
 	public AbstractAnalysisState<T> getExitState(Statement st) {
 		return this.getState(st).smallStepSemantics(st);
 	}
 	
+	/**
+	 * Compute the fixpoint of the analysis
+	 * @param <T> the exact type of the abstract domain
+	 * @param cfg the control flow graph of the analyzed program
+	 * @param entryState the entry state of the analysis
+	 * @return the result of the analysis
+	 */
 	public static <T extends SemanticDomain<T> & Lattice<T>> CFGAnalysisResults<T> computeFixpoint(CFG cfg, AbstractAnalysisState<T> entryState) {
 		CFGAnalysisResults<T> prevIteration = new CFGAnalysisResults<T>(cfg, entryState).singleIteration();
 		CFGAnalysisResults<T> nextIteration = prevIteration.singleIteration();
@@ -125,8 +155,54 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	}
 
 
+	/**
+	 * 
+	 * @return the control flow graph of the analyzed program
+	 */
 	public CFG getCfg() {
 		return cfg;
+	}
+	
+	/**
+	 * Dump the results of the analysis to a dot file reporting for each statement the entry and exit state.
+	 * @param output the path of the file to be dumped
+	 * @throws IOException
+	 */
+	public void dumpToDotFile(String output) throws IOException {
+
+		DOTExporter<Statement, DefaultWeightedEdge> exporter2 = new DOTExporter<Statement, DefaultWeightedEdge>(
+				new IntegerComponentNameProvider<Statement>(),
+
+				new ComponentNameProvider<Statement>() {
+
+					@Override
+					public String getName(Statement component) {
+						return "Entry state:\n"+getEntryState(component)+"\n"
+								+component+
+								"\nExit state:\n"+(getEntryState(component)==null ? "_|_" : getEntryState(component).smallStepSemantics(component));
+					}
+					
+				},
+				new ComponentNameProvider<DefaultWeightedEdge>() {
+
+					@Override
+					public String getName(DefaultWeightedEdge component) {
+						Boolean b;
+						try {
+							b = CFG.getBooleanFromWeight(getCfg().getGraph().getEdgeWeight(component));
+						} catch (ParsingException e) {
+							return "<error>";
+						}
+						if(b==null) return "";
+						else return String.valueOf(b.booleanValue());
+					}
+					
+				}
+		);
+		try(FileWriter writer = new FileWriter(output)) {
+			exporter2.exportGraph(getCfg().getGraph(), writer);
+		}
+		
 	}
 
 }

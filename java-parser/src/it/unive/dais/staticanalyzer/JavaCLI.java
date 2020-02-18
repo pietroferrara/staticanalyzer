@@ -15,11 +15,6 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-import org.jgrapht.graph.DefaultWeightedEdge;
-import org.jgrapht.io.ComponentNameProvider;
-import org.jgrapht.io.DOTExporter;
-import org.jgrapht.io.IntegerComponentNameProvider;
-import org.jgrapht.io.StringComponentNameProvider;
 
 import it.unive.dais.staticanalyzer.abstractdomain.AbstractAnalysisState;
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
@@ -32,11 +27,11 @@ import it.unive.dais.staticanalyzer.api.AnalysisOptions;
 import it.unive.dais.staticanalyzer.api.AnalysisResult;
 import it.unive.dais.staticanalyzer.api.Warning;
 import it.unive.dais.staticanalyzer.api.XmlUtility;
+import it.unive.dais.staticanalyzer.cfg.JavaBodyParser;
 import it.unive.dais.staticanalyzer.cfg.CFG;
 import it.unive.dais.staticanalyzer.cfg.CFGAnalysisResults;
 import it.unive.dais.staticanalyzer.cfg.ParsingException;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
-import it.unive.dais.staticanalyzer.parser.java.BodyParser;
 import it.unive.dais.staticanalyzer.property.AssertChecker;
 import it.unive.dais.staticanalyzer.property.Checker;
 import it.unive.dais.staticanalyzer.property.GenericSingleStatementChecker;
@@ -70,10 +65,10 @@ public class JavaCLI {
 	public static AnalysisResult runAnalysis(it.unive.dais.staticanalyzer.api.AnalysisOptions analysisOptions) throws IOException, ParseException {
 		FileInputStream stream = new FileInputStream(analysisOptions.getInput());
 		logger.info("Building up the CFG");
-		CFG cfg = new BodyParser(stream).parse();
+		CFG cfg = new JavaBodyParser(stream).parse();
 		String cfgOutput = analysisOptions.getCfg();
 		if(cfgOutput != null) {
-			dumpCFG(cfg, cfgOutput);
+			cfg.dumpToDotFile(cfgOutput);
 			logger.info("CFG dumped to "+cfgOutput);
 		}
 
@@ -85,7 +80,7 @@ public class JavaCLI {
 		logger.info("Analysis ended");		
 		
 		if(analysisOptions.getOutput()!=null && ! analysisOptions.getOutput().isEmpty())
-			dumpOutput(analysis, analysisOptions.getOutput());
+			analysis.dumpToDotFile(analysisOptions.getOutput());
 		logger.info("Abstract results dumped to "+analysisOptions.getOutput());
 		
 		Checker c = getChecker(analysisOptions.getChecker());
@@ -100,45 +95,6 @@ public class JavaCLI {
 				logger.info(w.toString());
 		}
 		return new AnalysisResult(analysisOptions, warns);
-	}
-
-	private static <T extends Lattice<T> & SemanticDomain<T>> void dumpOutput(
-			CFGAnalysisResults<T> analysis,
-			String output) throws IOException {
-
-		DOTExporter<Statement, DefaultWeightedEdge> exporter2 = new DOTExporter<Statement, DefaultWeightedEdge>(
-				new IntegerComponentNameProvider<Statement>(),
-
-				new ComponentNameProvider<Statement>() {
-
-					@Override
-					public String getName(Statement component) {
-						return "Entry state:\n"+analysis.getEntryState(component)+"\n"
-								+component+
-								"\nExit state:\n"+(analysis.getEntryState(component)==null ? "_|_" : analysis.getEntryState(component).smallStepSemantics(component));
-					}
-					
-				},
-				new ComponentNameProvider<DefaultWeightedEdge>() {
-
-					@Override
-					public String getName(DefaultWeightedEdge component) {
-						Boolean b;
-						try {
-							b = CFG.getBooleanFromWeight(analysis.getCfg().getGraph().getEdgeWeight(component));
-						} catch (ParsingException e) {
-							return "<error>";
-						}
-						if(b==null) return "";
-						else return String.valueOf(b.booleanValue());
-					}
-					
-				}
-		);
-		try(FileWriter writer = new FileWriter(output)) {
-			exporter2.exportGraph(analysis.getCfg().getGraph(), writer);
-		}
-		
 	}
 
 	private static Checker getChecker(String checker) throws ParseException {
@@ -163,31 +119,6 @@ public class JavaCLI {
 					throw new ParseException("Numerical domain "+params[1]+" not supported by Apron. Apron supports the following domains: "+NumericalDomain.values());
 				}
 			default: throw new UnsupportedOperationException("Domain "+domain+" not supported");
-		}
-	}
-
-	private static void dumpCFG(CFG cfg, String cfgOutput) throws IOException {
-		DOTExporter<Statement, DefaultWeightedEdge> exporter = new DOTExporter<Statement, DefaultWeightedEdge>(
-				new IntegerComponentNameProvider<Statement>(),
-				new StringComponentNameProvider<Statement>(),
-				new ComponentNameProvider<DefaultWeightedEdge>() {
-
-					@Override
-					public String getName(DefaultWeightedEdge component) {
-						Boolean b;
-						try {
-							b = CFG.getBooleanFromWeight(cfg.getGraph().getEdgeWeight(component));
-						} catch (ParsingException e) {
-							return "<error>";
-						}
-						if(b==null) return "";
-						else return String.valueOf(b.booleanValue());
-					}
-					
-				}
-		);
-		try(FileWriter writer = new FileWriter(cfgOutput)) {
-			exporter.exportGraph(cfg.getGraph(), writer);
 		}
 	}
 

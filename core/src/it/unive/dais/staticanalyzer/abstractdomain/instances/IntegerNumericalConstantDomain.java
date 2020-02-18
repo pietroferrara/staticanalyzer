@@ -3,11 +3,20 @@ package it.unive.dais.staticanalyzer.abstractdomain.instances;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.expression.IntegerConstant;
 
+/**
+ * The integer constant propagation non relational abstract domain
+ * @author Pietro Ferrara
+ *
+ */
 public class IntegerNumericalConstantDomain implements NonRelationalDomain<IntegerNumericalConstantDomain> {
 
 	private boolean top, bottom;
 	private long value;
 	
+	/**
+	 * 
+	 * @param value the integer constant value represented by the instance
+	 */
 	public IntegerNumericalConstantDomain(long value) {
 		this.value = value;
 		this.top = false;

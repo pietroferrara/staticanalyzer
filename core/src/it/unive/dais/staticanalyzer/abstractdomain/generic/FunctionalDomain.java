@@ -7,6 +7,15 @@ import java.util.Set;
 
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 
+/**
+ * A generic functional abstract domain that performs the functional lifting of the lattice and 
+ * semantic operators on the elements of the codomain.
+ * @author Pietro Ferrara
+ *
+ * @param <D> the type of the keys of the function
+ * @param <T> the type of the values of the function
+ * @param <V> the concrete type of the functional domain
+ */
 public abstract class FunctionalDomain<D, T extends Lattice<T>, V extends FunctionalDomain<D, T, V>> implements Lattice<V> {
 	protected Map<D, T> function;
 	protected final T valueDomain;

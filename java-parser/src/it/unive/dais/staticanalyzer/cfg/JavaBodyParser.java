@@ -1,4 +1,4 @@
-package it.unive.dais.staticanalyzer.parser.java;
+package it.unive.dais.staticanalyzer.cfg;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -12,9 +12,9 @@ import it.unive.dais.staticanalyzer.cfg.Parser;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaLexer;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser;
 
-public class BodyParser implements Parser<CFG>{
+public class JavaBodyParser implements Parser<CFG>{
 	private InputStream input;
-	public BodyParser(InputStream input) {
+	public JavaBodyParser(InputStream input) {
 		this.input = input;
 	}
 
@@ -34,7 +34,7 @@ public class BodyParser implements Parser<CFG>{
 
         JavaParser.MethodBodyContext tree = parser.methodBody(); // begin parsing at method body rule
         
-        BodyVisitor  listener = new BodyVisitor();
+        JavaBodyVisitor  listener = new JavaBodyVisitor();
         CFG block = listener.visit(tree);
 
         return block;

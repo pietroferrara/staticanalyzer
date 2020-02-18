@@ -12,8 +12,17 @@ import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.statement.AssertStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
+/**
+ * Check for each assert statement (assert <exp>) if the asserted expression <exp> definitely 
+ * holds on the entry abstract state.
+ * @author Pietro Ferrara
+ *
+ */
 public class AssertChecker implements SingleStatementChecker {
 
+	/**
+	 * 
+	 */
 	public AssertChecker() { }
 
 	@Override
