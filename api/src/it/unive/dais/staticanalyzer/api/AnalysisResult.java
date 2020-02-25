@@ -8,7 +8,7 @@ import javax.xml.bind.annotation.XmlRootElement;
 
 /**
  * The class representing an analysis run, that is the options of the analysis as well as the warnings
- * produced by the analysis. It can be marshelled to and unmarshalled from an xml file.
+ * produced by the analysis. It can be marshaled to and unmarshaled from an xml file.
  * @author Pietro Ferrara
  *
  */

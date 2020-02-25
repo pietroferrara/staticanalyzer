@@ -76,7 +76,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 		CFGAnalysisResults<T> nextIteration = prevIteration.singleIteration();
 		int iteration = 1;
 		while(! nextIteration.lessOrEqual(prevIteration)) {
-			logger.info("Iteration n."+iteration);
+			logger.fine("Iteration n."+iteration);
 			if(iteration <= AnalysisConstants.WIDENING_LIMIT)
 				prevIteration = prevIteration.lub(nextIteration);
 			else prevIteration = prevIteration.widening(nextIteration);
@@ -90,12 +90,12 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	private CFGAnalysisResults<T> singleIteration() {
 		Collection<Statement> statements = cfg.getOrderedStatements();
 		int size = statements.size();
-		logger.info("# statements:"+size);
+		logger.fine("# statements:"+size);
 		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();
 		int i = 1;
 		for(Statement st : statements) {
 			if(i%10==0)
-				logger.info("Analyzed "+i+" statements");
+				logger.fine("Analyzed "+i+" statements");
 			i++;
 			AbstractAnalysisState<T> state = getEntryStateFromPoststates(poststates, st);
 			if(function.containsKey(st) && function.get(st) != null)

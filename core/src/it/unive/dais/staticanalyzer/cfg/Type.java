@@ -178,7 +178,7 @@ public abstract class Type extends ParsedBlock {
 	 *
 	 */
 	public static class DoubleType extends PrimitiveType {
-		DoubleType(int line, int column) {
+		public DoubleType(int line, int column) {
 			super(line, column);
 		}
 

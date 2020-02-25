@@ -21,7 +21,7 @@
        xsi:noNamespaceSchemaLocation="http://ant.apache.org/ivy/schemas/ivy.xsd">
     <info
         organisation="it.unive.dais.staticanalyzer"
-        module="javaparser">
+        module="api">
 	</info>
 	
 	<dependencies> 

@@ -63,9 +63,12 @@ public class JavaCLI {
 	}
 	
 	public static AnalysisResult runAnalysis(it.unive.dais.staticanalyzer.api.AnalysisOptions analysisOptions) throws IOException, ParseException {
-		FileInputStream stream = new FileInputStream(analysisOptions.getInput());
-		logger.info("Building up the CFG");
-		CFG cfg = new JavaBodyParser(stream).parse();
+		CFG cfg = null;
+		try(FileInputStream stream = new FileInputStream(analysisOptions.getInput())) {
+			logger.info("Building up the CFG");
+			cfg = new JavaBodyParser(stream).parse();
+		}
+		
 		String cfgOutput = analysisOptions.getCfg();
 		if(cfgOutput != null) {
 			cfg.dumpToDotFile(cfgOutput);
@@ -97,14 +100,14 @@ public class JavaCLI {
 		return new AnalysisResult(analysisOptions, warns);
 	}
 
-	private static Checker getChecker(String checker) throws ParseException {
+	public static Checker getChecker(String checker) throws ParseException {
 		switch(checker) {
 			case "AssertChecker": return new GenericSingleStatementChecker<>(new AssertChecker());
 			default: throw new UnsupportedOperationException("Checker "+checker+" not supported");
 		}
 	}
 	
-	private static AbstractAnalysisState<?> getAbstractState(String domain) throws ParseException {
+	public static AbstractAnalysisState<?> getAbstractState(String domain) throws ParseException {
 		String[] params = domain.split(":");
 		switch(params[0]) {
 			case "IntegerNumericalConstantDomain": return new AbstractAnalysisState<>(null, new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom()));
