@@ -6,6 +6,8 @@ Install Ivy Eclipse plugin (Help -> Install new software and then add http://www
 
 Import the projects in Eclipse, for each ivy.xml file in the main directory of a project: right click on the file -> Add ivy library and then Finish). If Eclipse does not find some library, try to right click on ivy.xml, then Ivy -> Resolve.
 
+The Eclipse plugin of UMLet is needed in order to visualize the UML diagrams containes in /core/doc/uml.
+
 # Running the analysis
 
 Class JavaRunner in project java-parser runs the analysis on snippets of Java code. It is needed to import and compile projects core and java-parser in order to run the analysis.
