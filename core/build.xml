@@ -1,0 +1,17 @@
+<project name="decisiontrees-analysis" default="retrieve" xmlns:ivy="antlib:org.apache.ivy.ant">
+
+   <property name="build.dir" location="target"/>
+
+    <target name="resolve" description="Use ivy to resolve dependencies">
+        <ivy:resolve/>
+    </target>
+
+    <target name="retrieve" depends="resolve" description="Populate directories">
+      <ivy:retrieve pattern="${build.dir}/lib/[artifact]-[revision]-[type].[ext]" conf="default" />
+    </target>
+
+    <target name="clean" description="Cleanup build files">
+        <delete dir="${build.dir}"/>
+    </target>
+
+</project>
