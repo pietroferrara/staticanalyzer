@@ -4,6 +4,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -48,21 +49,42 @@ public class AnalysisRunner {
 				String java = cmd.getOptionValue('j');
 				String domain = cmd.getOptionValue('d');
 				String dotresults = cmd.getOptionValue('r');
+				String output = cmd.getOptionValue('o');
 				
 				CFG cfg = readCFG(java);
 				
 				List<List<Double>> values = Utility.readCsv(csv);
 				Set<Integer> successfull = new HashSet<>(), failed = new HashSet<>();
+				File directory = new File(output);
+				if(! directory.isDirectory()) 
+					throw new ParseException("The output directory is not a directory!");
 				for(int i = 0; i < values.size(); i++) {
-					List<Double> vals = values.get(i);
-					logger.info("Beginning the analysis of case "+i);
-					if(runSingleAnalysis(vals, domain, cfg, dotresults== null ? null : dotresults+File.separator+i+".dot")) {
-						successfull.add(i);
-						logger.info("Row "+i+" correctly classified");
+					File check = new File(directory, i+".txt");
+					if(check.exists()) {
+						logger.info("Case "+i+" already processed");
+						Boolean result = Boolean.valueOf(Files.readAllLines(check.toPath()).get(0));
+						if(result==null)
+							throw new ParseException("Previous result stored in file "+check.getAbsolutePath()+" is invalid, it should start with a line containing true or false");
+						if(result.booleanValue())
+							successfull.add(i);
+						else failed.add(i);
 					}
 					else {
-						failed.add(i);
-						logger.warning("Row "+i+" wrongly classified");
+						List<Double> vals = values.get(i);
+						logger.info("Beginning the analysis of case "+i);
+						long starttime = System.currentTimeMillis();
+						boolean result = runSingleAnalysis(vals, domain, cfg, dotresults== null ? null : dotresults+File.separator+i+".dot");
+						long totaltime = System.currentTimeMillis() - starttime;
+						String toDump = result+System.lineSeparator()+totaltime;
+						Files.writeString(check.toPath(), toDump);
+						if(result) {
+							successfull.add(i);
+							logger.info("Row "+i+" correctly classified");
+						}
+						else {
+							failed.add(i);
+							logger.warning("Row "+i+" wrongly classified");
+						}
 					}
 				}
 				logger.info(successfull.size()+" instances correctly classified\n"+failed.size()+" wrongly classified\n");
@@ -75,7 +97,7 @@ public class AnalysisRunner {
 			printHelp();
 		}
 	}
-	
+
 	private static boolean runSingleAnalysis(List<Double> vals, String domain, CFG cfg, String dotresults) throws ParseException, IOException {
 		AbstractAnalysisState<?> entryState = JavaCLI.getAbstractState(domain);
 		for(int i = 1; i <= vals.size(); i++) {
@@ -119,11 +141,13 @@ public class AnalysisRunner {
 		Option csv = Option.builder("c").argName("csv file").desc("CSV file with data").longOpt("csv").hasArg(true).required(true).build();
 		Option java = Option.builder("j").argName("java file").desc("Java file with the body of the decision tree and the attacker").longOpt("java").hasArg(true).required(true).build();
 		Option domain = Option.builder("d").argName("abstract domain").desc("Abstract domain for the analysis").longOpt("domain").hasArg(true).required(true).build();
+		Option output = Option.builder("o").argName("output directory").desc("Directory where to dump the result of each case").longOpt("output").hasArg(true).required(true).build();
 		Option cfgresults = Option.builder("r").argName("dot results").desc("Directory where to dump the dot results of all the analyses").longOpt("dotresults").hasArg(true).build();
 		return new Options()
 				.addOption(csv)
 				.addOption(java)
 				.addOption(domain)
-				.addOption(cfgresults);
+				.addOption(cfgresults)
+				.addOption(output);
 	}
 }
