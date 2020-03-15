@@ -31,7 +31,7 @@ The parser does not support exceptions, objects, and method calls.
 
 There are two distinct ways to run the analysis.
 
-##JavaCLI
+## JavaCLI
 
 JavaCLI allows the user to specify the different parameters of the analysis (source code file, abstract domain, checker) from the command line.
 
@@ -51,7 +51,7 @@ Parameters -c, -d, and -i are mandatory.
 
 At the end of the analysis, JavaCLI produces a set of warnings that are printed in the console.
 
-##JavaXmlExecutor
+## JavaXmlExecutor
 
 JavaXmlExecutor executes the analysis with the options specified in a xml file containing the state of an AnalysisOptions instance.
 
@@ -63,7 +63,7 @@ usage: JavaXmlExecutor
 
 All the options of the analysis have to be contained in the given xml file.
 
-#AnalysisOptions
+# AnalysisOptions
 
 Class it.unive.dais.staticanalyzer.api.AnalysisOptions allows the user to specify all the options of the analysis in a class or xml file instead of passing them through JuliaCLI.
 
@@ -74,7 +74,7 @@ Class it.unive.dais.staticanalyzer.api.AnalysisOptions allows the user to specif
 For instance, the xml file above specifies an analysis of file code.java with the Interval domain (Apron:Box), applying checker AssertChecker, and to dump the analysis results to results.xml.
 
 
-#AnalysisResult
+# AnalysisResult
 
 Class it.unive.dais.staticanalyzer.api.AnalysisResult stores the options of the analysis as well as the results (that is, a set of warning). Like class AnalysisOptions, this can be represented as an instance of the class or an xml file.
 
@@ -91,6 +91,6 @@ Class it.unive.dais.staticanalyzer.api.AnalysisResult stores the options of the 
 ```
 For instance, the xml file above reports the results of an analysis with the options described in the previous section (Interval domain, AssertChecker, and code of file code.java), and that produced a warning at line 8 column 83.
 
-#Apron
+# Apron
 
 The implementation contains class Apron. This relies on Apron v. 0.9.12. The Java interface consists of 2 jar files (in core\lib), and it needs to access the binaries of Apron. Therefore it is necessary to compile Apron (see https://github.com/antoinemine/apron) on the machine one wants to run the analysis, and pass the path to the installation directory (e.g., /usr/local/lib) through the environment variable LD_LIBRARY_PATH. 
