@@ -12,12 +12,15 @@ import com.opencsv.exceptions.CsvValidationException;
 
 public class Utility {
 
-	public static List<List<Double>> readCsv(String csvFile) throws CsvValidationException, IOException {
+	public static List<List<Double>> readCsv(String csvFile, boolean skipFirst) throws CsvValidationException, IOException {
 		List<List<Double>> records = new ArrayList<List<Double>>();
 		try (CSVReader csvReader = new CSVReader(new FileReader(csvFile));) {
 		    String[] values = null;
+		    boolean first=true && skipFirst;
 		    while ((values = csvReader.readNext()) != null) {
-		    	records.add(
+		    	if(first)
+		    		first = false;
+		    	else records.add(
 		    			Arrays.asList(values).stream().mapToDouble(Double::parseDouble).boxed().collect(Collectors.toList())
 		    			);
 		    }

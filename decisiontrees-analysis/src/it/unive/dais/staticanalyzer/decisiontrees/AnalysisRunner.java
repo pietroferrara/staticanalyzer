@@ -53,7 +53,7 @@ public class AnalysisRunner {
 				
 				CFG cfg = readCFG(java);
 				
-				List<List<Double>> values = Utility.readCsv(csv);
+				List<List<Double>> values = Utility.readCsv(csv, true);
 				Set<Integer> successfull = new HashSet<>(), failed = new HashSet<>();
 				File directory = new File(output);
 				if(! directory.isDirectory()) 
