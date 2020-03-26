@@ -37,6 +37,9 @@ import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
 public class AnalysisRunner {
 
 	final static Logger logger = Logger.getLogger(CFGAnalysisResults.class.getName());
+	
+	
+	private static boolean verbose = false;
 
 	public static void main(String[] args) throws IOException, CsvValidationException {
 		CommandLineParser parser = new DefaultParser();
@@ -45,6 +48,8 @@ public class AnalysisRunner {
 			if(cmd.hasOption('h'))
 				printHelp();
 			else {
+				if(cmd.hasOption('v'))
+					verbose = true;
 				String csv = cmd.getOptionValue('c');
 				String java = cmd.getOptionValue('j');
 				String domain = cmd.getOptionValue('d');
@@ -61,7 +66,7 @@ public class AnalysisRunner {
 				for(int i = 0; i < values.size(); i++) {
 					File check = new File(directory, i+".txt");
 					if(check.exists()) {
-						logger.info("Case "+i+" already processed");
+						if(verbose) logger.info("Case "+i+" already processed");
 						Boolean result = Boolean.valueOf(Files.readAllLines(check.toPath()).get(0));
 						if(result==null)
 							throw new ParseException("Previous result stored in file "+check.getAbsolutePath()+" is invalid, it should start with a line containing true or false");
@@ -71,7 +76,7 @@ public class AnalysisRunner {
 					}
 					else {
 						List<Double> vals = values.get(i);
-						logger.info("Beginning the analysis of case "+i);
+						if(verbose) logger.info("Beginning the analysis of case "+i);
 						long starttime = System.currentTimeMillis();
 						boolean result = runSingleAnalysis(vals, domain, cfg, dotresults== null ? null : dotresults+File.separator+i+".dot");
 						long totaltime = System.currentTimeMillis() - starttime;
@@ -79,11 +84,11 @@ public class AnalysisRunner {
 						Files.writeString(check.toPath(), toDump);
 						if(result) {
 							successfull.add(i);
-							logger.info("Row "+i+" correctly classified");
+							if(verbose) logger.info("Row "+i+" correctly classified");
 						}
 						else {
 							failed.add(i);
-							logger.warning("Row "+i+" wrongly classified");
+							if(verbose) logger.warning("Row "+i+" wrongly classified");
 						}
 					}
 				}
@@ -143,11 +148,13 @@ public class AnalysisRunner {
 		Option domain = Option.builder("d").argName("abstract domain").desc("Abstract domain for the analysis").longOpt("domain").hasArg(true).required(true).build();
 		Option output = Option.builder("o").argName("output directory").desc("Directory where to dump the result of each case").longOpt("output").hasArg(true).required(true).build();
 		Option cfgresults = Option.builder("r").argName("dot results").desc("Directory where to dump the dot results of all the analyses").longOpt("dotresults").hasArg(true).build();
+		Option verbose = Option.builder("v").desc("Print verbose logging").longOpt("verbose").hasArg(false).build();
 		return new Options()
 				.addOption(csv)
 				.addOption(java)
 				.addOption(domain)
 				.addOption(cfgresults)
-				.addOption(output);
+				.addOption(output)
+				.addOption(verbose);
 	}
 }

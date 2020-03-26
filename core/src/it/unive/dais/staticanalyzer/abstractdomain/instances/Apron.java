@@ -90,8 +90,8 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	 * @param numericalDomain The specific numerical domain used by the analysis.
 	 */
 	public static void setManager(NumericalDomain numericalDomain) {
-		if(manager!=null)
-			logger.warning("Re-setting the manager! Allowed only in tests");
+		/*if(manager!=null)
+			logger.warning("Re-setting the manager! Allowed only in tests");*/
 		switch(numericalDomain) {
 			case Box: manager=new Box(); break;
 			case Octagon: manager=new Octagon(); break;
