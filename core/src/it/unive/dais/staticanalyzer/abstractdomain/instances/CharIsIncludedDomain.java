@@ -7,60 +7,59 @@ import java.util.Map;
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.Pair;
+import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.StringRepresentation;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Constant;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
+import it.unive.dais.staticanalyzer.cfg.expression.NumericalComparisonExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.StringConstant;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
 
-public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, SemanticDomain<CharIsIncludedDomain> {
 
-	//certainly contained characters
-	private String C; 
+
+public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, SemanticDomain<CharIsIncludedDomain> {
 	
-	//maybe contained characters
-	private String MC; 
+	StringRepresentation string; 
 	
-	private boolean top, bottom;
+	protected Map<String, StringRepresentation> map;
 	
-	protected Map<String, Pair<String, String>> map;
-	
-	public CharIsIncludedDomain(String C, String MC, Map<String, Pair<String, String>> map) {
-		this.C = C;
-		this.MC = MC;
-		this.top = false;
-		this.bottom = false;
-		this.map = map;
+	public CharIsIncludedDomain(StringRepresentation strRepr, Map<String, StringRepresentation> map) {
+		this.string = strRepr;
+		this.map = new HashMap<>(map);
 	}
 	
 	public CharIsIncludedDomain() {
-		this.C = new String("");
-		this.MC = new String("");
+		this.string = new StringRepresentation();
 		this.map = new HashMap<>();
 	}
 
 	@Override
 	public CharIsIncludedDomain lub(CharIsIncludedDomain other) {
-		return new CharIsIncludedDomain(StringUtility.intersect(this.C, other.C), StringUtility.union(this.MC, other.MC), this.map);
+		String C = StringUtility.intersect(this.string.C, other.string.C);
+		String MC = StringUtility.union(this.string.MC, other.string.MC);
+		
+		StringRepresentation str = new StringRepresentation(C, MC);
+		
+		return new CharIsIncludedDomain(str, this.map);
 	}
 
 	@Override
 	public boolean lessOrEqual(CharIsIncludedDomain other) {
 		boolean flag = true;
 		
-		for (int i = 0; i < other.C.length(); i++) {
+		for (int i = 0; i < other.string.C.length(); i++) {
 			//if C does not contain a char of other.C
-	        if (C.indexOf(other.C.charAt(i)) == -1) {
+	        if (string.C.indexOf(other.string.C.charAt(i)) == -1) {
 	            flag = false;
 	        }
 	    }
 		
-		for (int i = 0; i < MC.length(); i++) {
+		for (int i = 0; i < string.MC.length(); i++) {
 			//if other.MC does not contain a char of MC
-	        if (other.MC.indexOf(MC.charAt(i)) == -1) {
+	        if (other.string.MC.indexOf(string.MC.charAt(i)) == -1) {
 	            flag = false;
 	        }
 	    }
@@ -76,32 +75,25 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 	@Override
 	public CharIsIncludedDomain bottom() {
 		CharIsIncludedDomain charIsIncludedDomain = new CharIsIncludedDomain();
-		charIsIncludedDomain.bottom = true;
+		charIsIncludedDomain.string.bound = StringRepresentation.Bounds.BOTTOM;
 		
 		return charIsIncludedDomain;
 	}
 	
 
-	@Override
-	public String toString() {
-		if(this.bottom)
-			return "_|_";
-		if(this.top)
-			return "T";
-		return "Certainly contained characters: '" + C + "'\n Maybe contained characters: '" + MC + "'";
-	}
+
 	
 	private CharIsIncludedDomain top() {
 		CharIsIncludedDomain charIsIncludedDomain = new CharIsIncludedDomain();
 		
-		charIsIncludedDomain.top = true;
+		charIsIncludedDomain.string.bound = StringRepresentation.Bounds.TOP;
 		return charIsIncludedDomain;
 	}
 
 
 	@Override
 	public CharIsIncludedDomain smallStepSemantics(Statement st) {
-		System.out.println(st.getClass().toString());
+		
 		if(st instanceof Assignment) {
 			Assignment ass = (Assignment)st;
 			String key = ass.getAssignedVariable().getName();
@@ -111,16 +103,71 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 			if(expr instanceof StringConstant) {
 				String value = ((StringConstant)expr).toString();
 				
-				Pair<String, String> toAdd = new Pair<>(value, "");
+				StringRepresentation toAdd = new StringRepresentation(value, "");
 				
 				map.put(key, toAdd);
 				
-				return new CharIsIncludedDomain(value, "", map);
+				return new CharIsIncludedDomain(toAdd, map);
 			}
 			
+			//TODO: add NumericalComparisonExpression option?
+			/*
 			if(expr instanceof BinaryArithmeticExpression) {
 				BinaryArithmeticExpression assignedExpr = (BinaryArithmeticExpression)expr;
-				if(assignedExpr.getOperator().equals("+")) {
+				Expression leftSide = assignedExpr.getLeft();
+				Expression rightSide = assignedExpr.getRight();
+				
+				Pair<String, String> result = new Pair("", "");
+				boolean maybeIncluded = false;
+				
+				while(leftSide instanceof BinaryArithmeticExpression || rightSide instanceof BinaryArithmeticExpression) {
+					if(assignedExpr.getOperator().equals("+")) {
+						if(leftSide instanceof BinaryArithmeticExpression) {
+							if(rightSide instanceof StringConstant) {
+								StringConstant str = (StringConstant)rightSide;
+								result.setLeft(result.getLeft() + str.toString());
+							}
+							
+							if(rightSide instanceof VariableIdentifier) {
+								VariableIdentifier vi = (VariableIdentifier)rightSide;
+								
+								Pair<String, String> storedValue = map.get(vi);
+								if(storedValue == null) {
+									maybeIncluded = true;
+								} else {
+									//add 
+									result.setLeft(result.getLeft() + storedValue.getLeft());
+									result.setRight(result.getRight() + storedValue.getRight());
+								}
+							}
+							
+							BinaryArithmeticExpression bae = (BinaryArithmeticExpression)leftSide;
+							rightSide = bae.getRight();
+							leftSide = bae.getLeft();
+							
+						} else {
+							BinaryArithmeticExpression bae = (BinaryArithmeticExpression)rightSide;
+							rightSide = bae.getRight();
+							leftSide = bae.getLeft();
+						}
+					
+					
+					} else {
+						//TODO
+					
+					}
+				
+				}
+				
+				
+				Pair<String, String> storedValues = map.get(key);
+				if(maybeIncluded) {
+					return new CharIsIncludedDomain("", result.getLeft() + result.getRight(), map);
+				} else {
+					return new CharIsIncludedDomain(result.getLeft(), result.getRight(), map);
+				}
+				
+				/*if(assignedExpr.getOperator().equals("+")) {
 					Expression leftSide = assignedExpr.getLeft();
 					Expression rightSide = assignedExpr.getRight(); 
 					
@@ -137,14 +184,14 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 							return new CharIsIncludedDomain(updatedValue.getLeft(), updatedValue.getRight(), map);
 						}
 					}
-				}
-			}
+				}*/
+			/*}
 			
 			
 			return new CharIsIncludedDomain("", "", map);
-			
+		*/	
 		}
-		return new CharIsIncludedDomain("", "", map);
+		return new CharIsIncludedDomain(new StringRepresentation(), map);
 	}
 
 	@Override
@@ -160,47 +207,17 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 	}
 
 	@Override
-	public int hashCode() {
-		final int prime = 31;
-		int result = 1;
-		result = prime * result + ((C == null) ? 0 : C.hashCode());
-		result = prime * result + ((MC == null) ? 0 : MC.hashCode());
-		result = prime * result + (bottom ? 1231 : 1237);
-		result = prime * result + ((map == null) ? 0 : map.hashCode());
-		result = prime * result + (top ? 1231 : 1237);
-		return result;
+	public String toString() {
+		String out = "";
+		for (Map.Entry<String, StringRepresentation> entry : map.entrySet()) {
+		    out += entry.getKey() + ": " + entry.getValue().toString() + "\n";
+		}
+		return out;
 	}
 
-	@Override
-	public boolean equals(Object obj) {
-		if (this == obj)
-			return true;
-		if (obj == null)
-			return false;
-		if (getClass() != obj.getClass())
-			return false;
-		CharIsIncludedDomain other = (CharIsIncludedDomain) obj;
-		if (C == null) {
-			if (other.C != null)
-				return false;
-		} else if (!C.equals(other.C))
-			return false;
-		if (MC == null) {
-			if (other.MC != null)
-				return false;
-		} else if (!MC.equals(other.MC))
-			return false;
-		if (bottom != other.bottom)
-			return false;
-		if (map == null) {
-			if (other.map != null)
-				return false;
-		} else if (!map.equals(other.map))
-			return false;
-		if (top != other.top)
-			return false;
-		return true;
-	}
+	
+
+	
 	
 	
 
