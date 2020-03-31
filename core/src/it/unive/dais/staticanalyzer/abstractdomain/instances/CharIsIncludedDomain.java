@@ -6,7 +6,6 @@ import java.util.Map;
 
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
-import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.Pair;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.StringRepresentation;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Constant;
