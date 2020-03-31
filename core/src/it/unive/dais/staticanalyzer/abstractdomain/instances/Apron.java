@@ -124,6 +124,8 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	@Override
 	public Apron smallStepSemantics(Statement st) {
 		try {
+			if(this.state.isBottom(manager))
+				return this.bottom();
 			if(st instanceof SkipStatement)
 				return new Apron(this.state);
 			if(st instanceof VariableDeclaration) {
@@ -161,6 +163,8 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	@Override
 	public Apron assume(Expression expr) {
 		try {
+			if(this.state.isBottom(manager))
+				return this.bottom();
 			if(expr instanceof NumericalComparisonExpression)
 				return new Apron(state.meetCopy(manager, convertNumericalComparisonToApronFormat((NumericalComparisonExpression) expr)));
 			else if(expr instanceof NegatedBooleanExpression) {
@@ -202,6 +206,13 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	
 	@Override
 	public boolean satisfy(Expression expr) {
+		try {
+			if(this.state.isBottom(manager))
+				return true;
+		}
+		catch(ApronException e) {
+			throw new UnsupportedOperationException("Apron library crashed", e);
+		}
 		if(expr instanceof NumericalComparisonExpression)
 			try {
 				return state.satisfy(manager, convertNumericalComparisonToApronFormat((NumericalComparisonExpression) expr));
@@ -296,6 +307,10 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	@Override
 	public Apron lub(Apron other) {
 		try {
+			if(other.state.isBottom(manager))
+				return this;
+			if(this.state.isBottom(manager))
+				return other;
 			return new Apron(state.joinCopy(manager, other.state));
 		} catch (ApronException e) {
 			throw new UnsupportedOperationException("Apron library crashed", e);
@@ -305,6 +320,10 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	@Override
 	public boolean lessOrEqual(Apron other) {
 		try {
+			if(this.state.isBottom(manager))
+				return true;
+			if(other.state.isBottom(manager))
+				return false;
 			return state.isIncluded(manager, other.state);
 		} catch (ApronException e) {
 			throw new UnsupportedOperationException("Apron library crashed", e);
@@ -314,6 +333,10 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	@Override
 	public Apron widening(Apron succ) {
 		try {
+			if(succ.state.isBottom(manager))
+				return this;
+			if(this.state.isBottom(manager))
+				return succ;
 			return new Apron(state.widening(manager, succ.state));
 		} catch (ApronException e) {
 			throw new UnsupportedOperationException("Apron library crashed", e);

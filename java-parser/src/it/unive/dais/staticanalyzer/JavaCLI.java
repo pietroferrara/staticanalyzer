@@ -4,6 +4,8 @@ import java.io.FileInputStream;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBException;
@@ -23,6 +25,7 @@ import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron.NumericalDoma
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Environment;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.IntegerNumericalConstantDomain;
+import it.unive.dais.staticanalyzer.abstractdomain.instances.TracePartitioning;
 import it.unive.dais.staticanalyzer.api.AnalysisOptions;
 import it.unive.dais.staticanalyzer.api.AnalysisResult;
 import it.unive.dais.staticanalyzer.api.Warning;
@@ -110,13 +113,35 @@ public class JavaCLI {
 	public static AbstractAnalysisState<?> getAbstractState(String domain) throws ParseException {
 		String[] params = domain.split(":");
 		switch(params[0]) {
-			case "IntegerNumericalConstantDomain": return new AbstractAnalysisState<>(null, new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom()));
+			case "TracePartitioning" : 
+				Map<Integer, Integer> map = new HashMap<>();
+				String partitions = params[1];
+				for(String part : partitions.split(";")) {
+					String[] val = part.split(",");
+					map.put(Integer.valueOf(val[0]), Integer.valueOf(val[1]));
+				}
+				String domainName = domain.substring(domain.indexOf(":")+1);
+				domainName = domainName.substring(domainName.indexOf(":")+1);
+				return new AbstractAnalysisState(null, 
+						new TracePartitioning(extractBasicState(domainName), map
+								));
+			case "IntegerNumericalConstantDomain":
+			case "Apron": 
+				return new AbstractAnalysisState(null, extractBasicState(domain));
+			default: throw new UnsupportedOperationException("Domain "+domain+" not supported");
+		}
+	}
+
+	public static <T extends SemanticDomain<T> & Lattice<T>> T extractBasicState(String domain) throws ParseException {
+		String[] params = domain.split(":");
+		switch(params[0]) {
+			case "IntegerNumericalConstantDomain": new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom());
 			case "Apron": 
 				if(params.length==1)
 					throw new ParseException("Domain Apron needs the numerical domain, syntax -d Apron:<numerical_domain>");
 				try {
 					Apron.setManager(NumericalDomain.valueOf(params[1]));
-					return new AbstractAnalysisState<Apron>(null, new Apron());
+					return (T) new Apron();
 				}
 				catch(IllegalArgumentException e) {
 					throw new ParseException("Numerical domain "+params[1]+" not supported by Apron. Apron supports the following domains: "+NumericalDomain.values());
@@ -124,7 +149,7 @@ public class JavaCLI {
 			default: throw new UnsupportedOperationException("Domain "+domain+" not supported");
 		}
 	}
-
+	
 	private static it.unive.dais.staticanalyzer.api.AnalysisOptions CLIoptionsToStructuredOptions(CommandLine cmd) {
 		return new it.unive.dais.staticanalyzer.api.AnalysisOptions(cmd.getOptionValue("i"), cmd.getOptionValue("o"), cmd.getOptionValue("cfg"), cmd.getOptionValue("d"), cmd.getOptionValue("c"), cmd.getOptionValue("a"), cmd.getOptionValue("r"));
 	}
