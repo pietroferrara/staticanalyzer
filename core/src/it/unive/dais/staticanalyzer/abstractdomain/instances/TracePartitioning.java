@@ -38,9 +38,11 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
 		TracePartitioning<Domain> result = this.bottom();
 		result.function = new HashMap<>();
 		Set<Map<Integer, Integer> > keys = new HashSet<>(this.function.keySet());
-		
-		for(Map<Integer, Integer> key : keys)
-			result.function.put(retokenizer.apply(key), lift.apply(this.getState(key)));
+
+		for(Map<Integer, Integer> key : keys) {
+			Domain previous = result.function.get(retokenizer.apply(key));
+			result.function.put(retokenizer.apply(key), previous == null ? lift.apply(this.getState(key)) : previous.lub(lift.apply(this.getState(key))));
+		}
 		return result;
 	}
 	
