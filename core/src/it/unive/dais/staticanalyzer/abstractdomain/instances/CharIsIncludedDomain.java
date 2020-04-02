@@ -1,6 +1,5 @@
 package it.unive.dais.staticanalyzer.abstractdomain.instances;
 
-import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -8,14 +7,11 @@ import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.StringRepresentation;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
-import it.unive.dais.staticanalyzer.cfg.expression.Constant;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
-import it.unive.dais.staticanalyzer.cfg.expression.NumericalComparisonExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.StringConstant;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
-import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
 
 
 
@@ -26,8 +22,16 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 	protected Map<String, StringRepresentation> map;
 	
 	public CharIsIncludedDomain(StringRepresentation strRepr, Map<String, StringRepresentation> map) {
-		this.string = strRepr;
-		this.map = new HashMap<>(map);
+		this.string = new StringRepresentation(strRepr.name, strRepr.C, strRepr.MC);
+		
+		
+		
+		this.map = new HashMap<>();
+		
+		for (Map.Entry<String, StringRepresentation> entry : map.entrySet()) {
+			StringRepresentation s = new StringRepresentation(entry.getValue());
+		    this.map.put(entry.getKey(), s);
+		}
 	}
 	
 	public CharIsIncludedDomain() {
@@ -40,7 +44,11 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 		String C = StringUtility.intersect(this.string.C, other.string.C);
 		String MC = StringUtility.union(this.string.MC, other.string.MC);
 		
-		StringRepresentation str = new StringRepresentation(C, MC);
+		//System.out.println("C:"+C+" MC:"+MC);
+		
+		StringRepresentation str = new StringRepresentation(string.name, C, MC);
+		if(string != null && string.name != null)
+			map.put(string.name, str);
 		
 		return new CharIsIncludedDomain(str, this.map);
 	}
@@ -88,11 +96,36 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 		charIsIncludedDomain.string.bound = StringRepresentation.Bounds.TOP;
 		return charIsIncludedDomain;
 	}
+	
+	private StringRepresentation getContent(Expression expr) {
+		StringRepresentation res = new StringRepresentation();
+		
+		if(expr instanceof StringConstant) {
+			StringConstant str = (StringConstant)expr;
+			res.C += str.toString();
+			res.MC += str.toString();
+		}
+		
+		if(expr instanceof VariableIdentifier) {
+			VariableIdentifier vi = (VariableIdentifier)expr;
+			
+			StringRepresentation storedValue = map.get(vi.toString());
+			if(storedValue == null) {
+				res.MC += "K";
+			} else {
+				//add 
+				res.C += storedValue.C;
+				res.MC += storedValue.MC;
+			}
+		}
+		
+		return res;
+	}
 
 
 	@Override
 	public CharIsIncludedDomain smallStepSemantics(Statement st) {
-		
+		System.out.println(st.getClass().toString());
 		if(st instanceof Assignment) {
 			Assignment ass = (Assignment)st;
 			String key = ass.getAssignedVariable().getName();
@@ -102,49 +135,34 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 			if(expr instanceof StringConstant) {
 				String value = ((StringConstant)expr).toString();
 				
-				StringRepresentation toAdd = new StringRepresentation(value, "");
+				StringRepresentation toAdd = new StringRepresentation(key, value, value);
 				
 				map.put(key, toAdd);
 				
 				return new CharIsIncludedDomain(toAdd, map);
 			}
 			
-			//TODO: add NumericalComparisonExpression option?
-			/*
 			if(expr instanceof BinaryArithmeticExpression) {
 				BinaryArithmeticExpression assignedExpr = (BinaryArithmeticExpression)expr;
 				Expression leftSide = assignedExpr.getLeft();
 				Expression rightSide = assignedExpr.getRight();
 				
-				Pair<String, String> result = new Pair("", "");
-				boolean maybeIncluded = false;
+				StringRepresentation result = new StringRepresentation();
 				
 				while(leftSide instanceof BinaryArithmeticExpression || rightSide instanceof BinaryArithmeticExpression) {
 					if(assignedExpr.getOperator().equals("+")) {
 						if(leftSide instanceof BinaryArithmeticExpression) {
-							if(rightSide instanceof StringConstant) {
-								StringConstant str = (StringConstant)rightSide;
-								result.setLeft(result.getLeft() + str.toString());
-							}
 							
-							if(rightSide instanceof VariableIdentifier) {
-								VariableIdentifier vi = (VariableIdentifier)rightSide;
-								
-								Pair<String, String> storedValue = map.get(vi);
-								if(storedValue == null) {
-									maybeIncluded = true;
-								} else {
-									//add 
-									result.setLeft(result.getLeft() + storedValue.getLeft());
-									result.setRight(result.getRight() + storedValue.getRight());
-								}
-							}
+							result.add(getContent(rightSide));
 							
 							BinaryArithmeticExpression bae = (BinaryArithmeticExpression)leftSide;
 							rightSide = bae.getRight();
 							leftSide = bae.getLeft();
 							
 						} else {
+							
+							result.add(getContent(leftSide));
+							
 							BinaryArithmeticExpression bae = (BinaryArithmeticExpression)rightSide;
 							rightSide = bae.getRight();
 							leftSide = bae.getLeft();
@@ -158,39 +176,23 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 				
 				}
 				
+				result.add(getContent(leftSide));
+				result.add(getContent(rightSide));
 				
-				Pair<String, String> storedValues = map.get(key);
-				if(maybeIncluded) {
-					return new CharIsIncludedDomain("", result.getLeft() + result.getRight(), map);
-				} else {
-					return new CharIsIncludedDomain(result.getLeft(), result.getRight(), map);
-				}
+				result.paramsToSets();
 				
-				/*if(assignedExpr.getOperator().equals("+")) {
-					Expression leftSide = assignedExpr.getLeft();
-					Expression rightSide = assignedExpr.getRight(); 
-					
-					if(leftSide instanceof VariableIdentifier) {
-						if(rightSide instanceof StringConstant) {
-							String variable = ((VariableIdentifier)leftSide).getName();
-							String constant = ((StringConstant)rightSide).toString();
-							
-							Pair<String, String> storedValue = map.get(variable);
-							Pair<String,String> updatedValue = new Pair<String, String>(storedValue.getLeft() + constant, storedValue.getRight());
-						
-							map.put(variable, updatedValue);
-							
-							return new CharIsIncludedDomain(updatedValue.getLeft(), updatedValue.getRight(), map);
-						}
-					}
-				}*/
-			/*}
+				map.put(key, result);
+				
+				
+				
+				return new CharIsIncludedDomain(result, map);
+				
+			}
 			
 			
-			return new CharIsIncludedDomain("", "", map);
-		*/	
 		}
-		return new CharIsIncludedDomain(new StringRepresentation(), map);
+		
+		return this;
 	}
 
 	@Override
