@@ -24,6 +24,7 @@ import org.apache.commons.cli.ParseException;
 
 import com.opencsv.exceptions.CsvValidationException;
 
+import it.unive.dais.staticanalyzer.AnalysisConstants;
 import it.unive.dais.staticanalyzer.JavaCLI;
 import it.unive.dais.staticanalyzer.abstractdomain.AbstractAnalysisState;
 import it.unive.dais.staticanalyzer.api.Warning;
@@ -58,6 +59,8 @@ public class AnalysisRunner {
 				String dotresults = cmd.getOptionValue('r');
 				String summaryresults = cmd.getOptionValue('s');
 				String output = cmd.getOptionValue('o');
+				String widening = cmd.getOptionValue('w');
+				AnalysisConstants.WIDENING_LIMIT = Integer.parseInt(widening);
 				
 				CFG cfg = readCFG(java);
 				
@@ -166,6 +169,7 @@ public class AnalysisRunner {
 		Option cfgresults = Option.builder("r").argName("dot results").desc("Directory where to dump the dot results of all the analyses").longOpt("dotresults").hasArg(true).build();
 		Option verbose = Option.builder("v").desc("Print verbose logging").longOpt("verbose").hasArg(false).build();
 		Option summaryresult = Option.builder("s").argName("summary results").desc("File where to dump a text file with all the instances wrongly classified and the total analysis time").longOpt("summaryresults").hasArg(true).required(true).build();
+		Option widening = Option.builder("w").argName("threshold").desc("Threshold before applying widening operators").longOpt("widening").hasArg(true).required(true).build();
 
 		return new Options()
 				.addOption(csv)
@@ -174,6 +178,7 @@ public class AnalysisRunner {
 				.addOption(cfgresults)
 				.addOption(output)
 				.addOption(verbose)
-				.addOption(summaryresult);
+				.addOption(summaryresult)
+				.addOption(widening);
 	}
 }
