@@ -5,7 +5,9 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.logging.Logger;
 
 import javax.xml.bind.JAXBException;
@@ -115,16 +117,21 @@ public class JavaCLI {
 		switch(params[0]) {
 			case "TracePartitioning" : 
 				Map<Integer, Integer> map = new HashMap<>();
+				Set<Integer> joinPoints = new HashSet<>();
 				String partitions = params[1];
 				for(String part : partitions.split(";")) {
-					String[] val = part.split(",");
-					map.put(Integer.valueOf(val[0]), Integer.valueOf(val[1]));
+					if(part.startsWith("j")) {
+						joinPoints.add(Integer.parseInt(part.substring(1)));
+					}
+					else {
+						String[] val = part.split(",");
+						map.put(Integer.valueOf(val[0]), Integer.valueOf(val[1]));
+					}
 				}
 				String domainName = domain.substring(domain.indexOf(":")+1);
 				domainName = domainName.substring(domainName.indexOf(":")+1);
 				return new AbstractAnalysisState(null, 
-						new TracePartitioning(extractBasicState(domainName), map
-								));
+						new TracePartitioning(extractBasicState(domainName), map, joinPoints));
 			case "IntegerNumericalConstantDomain":
 			case "Apron": 
 				return new AbstractAnalysisState(null, extractBasicState(domain));

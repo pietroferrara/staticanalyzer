@@ -17,21 +17,23 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
 		implements SemanticDomain<TracePartitioning<Domain>>, Lattice<TracePartitioning<Domain>> {
 	
 	private final Map<Integer, Integer> tokenBounds;
+	private final Set<Integer> joinPoints;
 	
 	
 	//tokenBounds represents for each code line how many "iterations" of a given code line we have to consider as distinct
-	public TracePartitioning(Domain valueDomain, Map<Integer, Integer> tokenBounds) {
+	public TracePartitioning(Domain valueDomain, Map<Integer, Integer> tokenBounds, Set<Integer> joinPoints) {
 		super(valueDomain.bottom());
 		this.tokenBounds = tokenBounds;
 		Map<Integer, Integer> initialKey = new HashMap<>();
 		for(Integer line : tokenBounds.keySet())
 			initialKey.put(line, Integer.valueOf(0));
 		this.function.put(initialKey, valueDomain);
+		this.joinPoints = joinPoints;
 	}
 
 	@Override
 	public TracePartitioning<Domain> bottom() {
-		return new TracePartitioning<>(super.valueDomain, tokenBounds);
+		return new TracePartitioning<>(super.valueDomain, tokenBounds, joinPoints);
 	}
 
 	private final TracePartitioning<Domain> functionalLift(java.util.function.Function<Domain, Domain> lift, java.util.function.Function<Map<Integer, Integer>, Map<Integer, Integer>> retokenizer) {
@@ -51,23 +53,31 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
 		return functionalLift(o1 -> o1.smallStepSemantics(st), t1 -> {
 			if(st instanceof SkipStatement)
 				return t1;
-			if(tokenBounds.keySet().contains(st.getLine())) {
-				int line = st.getLine();
-				int iterationBound = tokenBounds.get(line);
-				if(t1.get(line) < iterationBound) {
-					Map<Integer, Integer> result = new HashMap<>(t1);
-					result.put(line, t1.get(line)+1);
-					return result;
-				}
-				else return t1;
+			return computeNewTokens(st, t1);
+		});
+	}
+
+	private Map<Integer, Integer> computeNewTokens(Statement st, Map<Integer, Integer> t1) {
+		if(joinPoints.contains(Integer.valueOf(st.getLine())))
+			return new HashMap<>();
+		if(tokenBounds.keySet().contains(st.getLine())) {
+			int line = st.getLine();
+			int iterationBound = tokenBounds.get(line);
+			if(t1.get(line) < iterationBound) {
+				Map<Integer, Integer> result = new HashMap<>(t1);
+				result.put(line, t1.get(line)+1);
+				return result;
 			}
 			else return t1;
-		});
+		}
+		else return t1;
 	}
 
 	@Override
 	public TracePartitioning<Domain> assume(Expression currentExpression) {
-		return functionalLift(o1 -> o1.assume(currentExpression), t1 -> t1);
+		return functionalLift(o1 -> o1.assume(currentExpression), t1 -> {
+			return computeNewTokens(currentExpression, t1);
+		});
 	}
 
 	@Override
