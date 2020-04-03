@@ -11,24 +11,19 @@ public class StringRepresentation {
 	//maybe contained characters
 	public String MC;
 	
-	public enum Bounds {
-		  BOTTOM,
-		  TOP
-		}
+	public Utils.Bounds bound;
 	
-	public Bounds bound;
+	
 	
 	public StringRepresentation() {
 		this.C = new String("");
 		this.MC = new String("");
-		bound = null;
 	}
 	
 	public StringRepresentation(String name, String C, String MC) {
 		this.name = name;
 		this.C = new String(StringUtility.stringToSet(C));
 		this.MC = new String(StringUtility.stringToSet(MC));
-		bound = null;
 	}
 	
 	public StringRepresentation(StringRepresentation copy) {
@@ -37,16 +32,20 @@ public class StringRepresentation {
 
 	@Override
 	public String toString() {
-		if(this.bound == Bounds.BOTTOM)
+		if(bound == Utils.Bounds.BOTTOM)
 			return "_|_";
-		if(this.bound == Bounds.TOP)
+		if(bound == Utils.Bounds.TOP)
 			return "T";
 		return "C: '" + C + "' MC: '" + MC + "'";
 	}
 	
 	public void add(StringRepresentation str) {
 		this.C += str.C;
+		
 		this.MC += str.MC;
+		if(this.MC.contains("k") || this.MC.contains("K"))	
+			this.MC = "k";
+		
 	}
 	
 	public void paramsToSets() {

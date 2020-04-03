@@ -24,6 +24,7 @@ import it.unive.dais.staticanalyzer.abstractdomain.instances.CharIsIncludedDomai
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Apron;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.Environment;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.IntegerNumericalConstantDomain;
+import it.unive.dais.staticanalyzer.abstractdomain.instances.StringPrefixDomain;
 import it.unive.dais.staticanalyzer.api.AnalysisOptions;
 import it.unive.dais.staticanalyzer.api.AnalysisResult;
 import it.unive.dais.staticanalyzer.api.Warning;
@@ -113,6 +114,7 @@ public class JavaCLI {
 		switch(params[0]) {
 			case "IntegerNumericalConstantDomain": return new AbstractAnalysisState<>(null, new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom()));
 			case "CharIsIncludedDomain": return new AbstractAnalysisState<>(null, new CharIsIncludedDomain());
+			case "StringPrefixDomain": return new AbstractAnalysisState<>(null, new StringPrefixDomain());
 			case "Apron": 
 				if(params.length==1)
 					throw new ParseException("Domain Apron needs the numerical domain, syntax -d Apron:<numerical_domain>");

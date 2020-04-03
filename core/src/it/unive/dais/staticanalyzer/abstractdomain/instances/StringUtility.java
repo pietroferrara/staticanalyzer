@@ -22,7 +22,8 @@ public class StringUtility {
 	    String s = (s1 + s2).toLowerCase(); //start with entire contents of both strings
 	    s = StringUtility.removeOccurrences(s);
 	    
-	    //System.out.println(s);
+	    
+	    
 	    return s;
 	}
 
