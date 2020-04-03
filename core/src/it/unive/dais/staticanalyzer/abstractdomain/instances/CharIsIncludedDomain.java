@@ -21,17 +21,13 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 	
 	protected Map<String, StringRepresentation> map;
 	
+	public CharIsIncludedDomain(Map<String, StringRepresentation> map) {
+		this.map = new HashMap<String, StringRepresentation>(map);
+	}
+	
 	public CharIsIncludedDomain(StringRepresentation strRepr, Map<String, StringRepresentation> map) {
 		this.string = new StringRepresentation(strRepr.name, strRepr.C, strRepr.MC);
-		
-		
-		
-		this.map = new HashMap<>();
-		
-		for (Map.Entry<String, StringRepresentation> entry : map.entrySet()) {
-			StringRepresentation s = new StringRepresentation(entry.getValue());
-		    this.map.put(entry.getKey(), s);
-		}
+		this.map = new HashMap<>(map);
 	}
 	
 	public CharIsIncludedDomain() {
@@ -41,20 +37,35 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 
 	@Override
 	public CharIsIncludedDomain lub(CharIsIncludedDomain other) {
+		
+		if(string.bound == StringRepresentation.Bounds.BOTTOM) {
+			return other;
+		}
+		if(other.string.bound == StringRepresentation.Bounds.BOTTOM) {
+			return this;
+		}
+		
 		String C = StringUtility.intersect(this.string.C, other.string.C);
 		String MC = StringUtility.union(this.string.MC, other.string.MC);
-		
-		//System.out.println("C:"+C+" MC:"+MC);
-		
 		StringRepresentation str = new StringRepresentation(string.name, C, MC);
-		if(string != null && string.name != null)
-			map.put(string.name, str);
 		
-		return new CharIsIncludedDomain(str, this.map);
+		HashMap<String, StringRepresentation> HMtoAdd = new HashMap<String, StringRepresentation>(this.map);
+		if(string != null && string.name != null)
+			HMtoAdd.put(string.name, str);
+		
+		return new CharIsIncludedDomain(str, HMtoAdd);
 	}
 
 	@Override
 	public boolean lessOrEqual(CharIsIncludedDomain other) {
+		
+		if(string.bound == StringRepresentation.Bounds.BOTTOM) {
+			return true;
+		}
+		if(other.string.bound == StringRepresentation.Bounds.BOTTOM) {
+			return false;
+		}
+		
 		boolean flag = true;
 		
 		for (int i = 0; i < other.string.C.length(); i++) {
@@ -81,7 +92,7 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 
 	@Override
 	public CharIsIncludedDomain bottom() {
-		CharIsIncludedDomain charIsIncludedDomain = new CharIsIncludedDomain();
+		CharIsIncludedDomain charIsIncludedDomain = new CharIsIncludedDomain(this.map);
 		charIsIncludedDomain.string.bound = StringRepresentation.Bounds.BOTTOM;
 		
 		return charIsIncludedDomain;
@@ -91,7 +102,7 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 
 	
 	private CharIsIncludedDomain top() {
-		CharIsIncludedDomain charIsIncludedDomain = new CharIsIncludedDomain();
+		CharIsIncludedDomain charIsIncludedDomain = new CharIsIncludedDomain(this.map);
 		
 		charIsIncludedDomain.string.bound = StringRepresentation.Bounds.TOP;
 		return charIsIncludedDomain;
@@ -113,7 +124,6 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 			if(storedValue == null) {
 				res.MC += "K";
 			} else {
-				//add 
 				res.C += storedValue.C;
 				res.MC += storedValue.MC;
 			}
@@ -137,9 +147,14 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 				
 				StringRepresentation toAdd = new StringRepresentation(key, value, value);
 				
-				map.put(key, toAdd);
+				//map.put(key, toAdd);
 				
-				return new CharIsIncludedDomain(toAdd, map);
+				System.out.println("this string: "+string.toString()+" this map: "+this.map.toString());
+				
+				HashMap<String, StringRepresentation> HMtoAdd = new HashMap<String, StringRepresentation>(this.map);
+				HMtoAdd.put(key, toAdd);
+				
+				return new CharIsIncludedDomain(toAdd, HMtoAdd);
 			}
 			
 			if(expr instanceof BinaryArithmeticExpression) {
@@ -181,11 +196,10 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 				
 				result.paramsToSets();
 				
-				map.put(key, result);
+				HashMap<String, StringRepresentation> HMtoAdd = new HashMap<String, StringRepresentation>(this.map);
+				HMtoAdd.put(key, result);
 				
-				
-				
-				return new CharIsIncludedDomain(result, map);
+				return new CharIsIncludedDomain(result, HMtoAdd);
 				
 			}
 			
