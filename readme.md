@@ -94,3 +94,19 @@ For instance, the xml file above reports the results of an analysis with the opt
 # Apron
 
 The implementation contains class Apron. This relies on Apron v. 0.9.12. The Java interface consists of 2 jar files (in core\lib), and it needs to access the binaries of Apron. Therefore it is necessary to compile Apron (see https://github.com/antoinemine/apron) on the machine one wants to run the analysis, and pass the path to the installation directory (e.g., /usr/local/lib) through the environment variable LD_LIBRARY_PATH. 
+
+# TracePartitioning
+
+The analyzer contains a very poor prototype of trace partitioning. This can be utilized by specifing the domain:
+
+```
+TracePartitioning:([<line>,<#iterations>] | j<line>;)*:<domain>
+```
+where
+- <domain> is the underlying domain to be applied during the analysis (e.g., Apron:Box),
+- pairs <line>,<#iterations> specifies to keep disjoint abstract states for the first #iterations of the semantics, and
+- j<line> specifies to apply as joint point the given line (that is, all abstract states in the partitioning will be joined when analyzing that code line).
+
+The various entries of <line>,<#iterations> and j<line> have to be separated by a ; character.
+Note that this implementation is experimental, rather ad-hoc, and highly untested.
+
