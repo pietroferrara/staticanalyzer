@@ -92,7 +92,15 @@ public class Attack {
 		return "Attack [lowerBound=" + lowerBound + ", upperBound=" + upperBound + ", delta=" + delta + ", cost=" + cost
 				+ ", line=" + line + "]";
 	}
+	public static long readJSONAttackerBudget(String attacker) throws FileNotFoundException, IOException, ParseException {
 
+        JSONParser parser = new JSONParser();
+        try (Reader reader = new FileReader(attacker)) {
+            JSONObject jsonObject = (JSONObject) parser.parse(reader);
+            return Long.parseLong(jsonObject.get("budget").toString());
+        }
+	}
+	
 	public static Map<Integer, Attack> readJSONAttacker(String attacker, List<String> header) throws FileNotFoundException, IOException, ParseException {
 
 		Map<Integer, Attack> result = new HashMap<>();

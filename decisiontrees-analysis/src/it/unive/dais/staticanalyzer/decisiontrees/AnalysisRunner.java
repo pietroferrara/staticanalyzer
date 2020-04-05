@@ -6,6 +6,7 @@ import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
@@ -69,6 +70,7 @@ public class AnalysisRunner {
 				List<List<Double>> values = Utility.readCsv(csv, true);
 				List<String> header = Utility.readCsvHeader(csv);
 				Map<Integer, Attack> attackerModel = Attack.readJSONAttacker(attacker, header);
+				long budget = Attack.readJSONAttackerBudget(attacker);
 				Set<Integer> successfull = new TreeSet<>(), failed = new TreeSet<>();
 				File directory = new File(output);
 				long totaltime = 0;
@@ -91,7 +93,7 @@ public class AnalysisRunner {
 						List<Double> vals = values.get(i);
 						if(verbose) logger.info("Beginning the analysis of case "+i);
 						long starttime = System.currentTimeMillis();
-						boolean result = runSingleAnalysis(vals, domain, cfg, dotresults== null ? null : dotresults+File.separator+i+".dot");
+						boolean result = runSingleAnalysis(vals, domain, attackerModel, budget, cfg, dotresults== null ? null : dotresults+File.separator+i+".dot");
 						long totallocaltime = System.currentTimeMillis() - starttime;
 						String toDump = result+System.lineSeparator()+totallocaltime;
 						totaltime += totallocaltime;
@@ -126,8 +128,22 @@ public class AnalysisRunner {
 		}
 	}
 
-	private static boolean runSingleAnalysis(List<Double> vals, String domain, CFG cfg, String dotresults) throws ParseException, IOException {
-		AbstractAnalysisState<?> entryState = JavaCLI.getAbstractState(domain);
+	private static boolean runSingleAnalysis(List<Double> vals, String domain, Map<Integer, Attack> attackerModel,
+			long budget, CFG cfg, String dotresults) throws ParseException, IOException {
+
+		List<String> tracePartitioningParameters = new ArrayList<>();
+		for(int i = 1; i <= vals.size(); i++) {
+			if(attackerModel.containsKey(i)) {
+				String par = extractTracePartitioningParameter(vals.get(i-1).doubleValue(), attackerModel.get(i), budget);
+				if(par!=null)
+					tracePartitioningParameters.add(par);
+			}
+		}
+		String elaboratedDomain = tracePartitioningParameters.size()==0 ? domain : "TracePartitioning:"+String.join(";", tracePartitioningParameters)+":"+domain;
+		
+		logger.info("Domain used for the analysis:"+elaboratedDomain);
+		AbstractAnalysisState<?> entryState = JavaCLI.getAbstractState(elaboratedDomain);
+		
 		for(int i = 1; i <= vals.size(); i++) {
 			VariableIdentifier varId;
 			if(i!=vals.size()) //declare and assign x<i>
@@ -149,6 +165,12 @@ public class AnalysisRunner {
 		else if(result.size()==1)
 			return false;
 		else throw new UnsupportedOperationException("Impossible case");
+	}
+
+	private static String extractTracePartitioningParameter(double featureConcreteValue, Attack attack, long budget) {
+		if(featureConcreteValue >= attack.getLowerBound() && featureConcreteValue<= attack.getUpperBound())
+			return attack.getLine()+","+((long) (budget/attack.getCost()));
+		else return null;
 	}
 
 	private static CFG readCFG(String java) throws FileNotFoundException, IOException {
