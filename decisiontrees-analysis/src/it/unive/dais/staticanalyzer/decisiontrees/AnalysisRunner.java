@@ -10,6 +10,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
 import java.util.logging.Logger;
@@ -44,7 +45,7 @@ public class AnalysisRunner {
 	
 	private static boolean verbose = false;
 
-	public static void main(String[] args) throws IOException, CsvValidationException {
+	public static void main(String[] args) throws IOException, CsvValidationException, org.json.simple.parser.ParseException {
 		CommandLineParser parser = new DefaultParser();
 		try {
 			CommandLine cmd = parser.parse(getOptions(), args);
@@ -56,6 +57,7 @@ public class AnalysisRunner {
 				String csv = cmd.getOptionValue('c');
 				String java = cmd.getOptionValue('j');
 				String domain = cmd.getOptionValue('d');
+				String attacker = cmd.getOptionValue('a');
 				String dotresults = cmd.getOptionValue('r');
 				String summaryresults = cmd.getOptionValue('s');
 				String output = cmd.getOptionValue('o');
@@ -65,6 +67,8 @@ public class AnalysisRunner {
 				CFG cfg = readCFG(java);
 				
 				List<List<Double>> values = Utility.readCsv(csv, true);
+				List<String> header = Utility.readCsvHeader(csv);
+				Map<Integer, Attack> attackerModel = Attack.readJSONAttacker(attacker, header);
 				Set<Integer> successfull = new TreeSet<>(), failed = new TreeSet<>();
 				File directory = new File(output);
 				long totaltime = 0;
@@ -170,7 +174,8 @@ public class AnalysisRunner {
 		Option verbose = Option.builder("v").desc("Print verbose logging").longOpt("verbose").hasArg(false).build();
 		Option summaryresult = Option.builder("s").argName("summary results").desc("File where to dump a text file with all the instances wrongly classified and the total analysis time").longOpt("summaryresults").hasArg(true).required(true).build();
 		Option widening = Option.builder("w").argName("threshold").desc("Threshold before applying widening operators").longOpt("widening").hasArg(true).required(true).build();
-
+		Option attacker = Option.builder("a").argName("json file").desc("JSON file with the specification of the attacker").longOpt("attacker").hasArg(true).required(true).build();
+		
 		return new Options()
 				.addOption(csv)
 				.addOption(java)
@@ -179,6 +184,7 @@ public class AnalysisRunner {
 				.addOption(output)
 				.addOption(verbose)
 				.addOption(summaryresult)
-				.addOption(widening);
+				.addOption(widening)
+				.addOption(attacker);
 	}
 }

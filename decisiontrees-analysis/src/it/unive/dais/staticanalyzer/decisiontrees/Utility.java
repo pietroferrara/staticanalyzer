@@ -28,4 +28,11 @@ public class Utility {
 		return records;
 	}
 	
+	public static List<String> readCsvHeader(String csvFile) throws CsvValidationException, IOException {
+		try (CSVReader csvReader = new CSVReader(new FileReader(csvFile));) {
+		    String[] values = csvReader.readNext();
+		    return Arrays.asList(values);
+		}
+	}
+	
 }
