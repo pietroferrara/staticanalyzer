@@ -34,7 +34,11 @@ public abstract class FunctionalDomain<D, T extends Lattice<T>, V extends Functi
 		return function==null;
 	}
 	
-	protected T getState(D st) {
+	public Set<D> getKeys() {
+		return function.keySet();
+	}
+	
+	public T getState(D st) {
 		if(! this.isBottom() && function.containsKey(st))
 			return function.get(st);
 		else return valueDomain;
