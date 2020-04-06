@@ -6,6 +6,7 @@ import java.util.Map;
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.StringRepresentation;
+import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.StringUtility;
 import it.unive.dais.staticanalyzer.abstractdomain.instances.utils.Utils;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
@@ -14,9 +15,14 @@ import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
-
-
+/**
+ * The domain approximates strings with the characters we know the strings surely contain, and ones that they could contain.
+ * Each string is represented by the StringRepresentation class.  
+ * 
+ * @author Carlo Zen
+ */
 public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, SemanticDomain<CharIsIncludedDomain> {
+	
 	
 	protected Map<String, StringRepresentation> map;
 	
@@ -28,7 +34,11 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 		this.map = new HashMap<>();
 	}
 
-
+	
+	/**
+	 * The least upper bound is given by the intersection between the sets of the surely contained characters 
+	 * and the union between the sets of the maybe contained characters.
+	 */
 	@Override
 	public CharIsIncludedDomain lub(CharIsIncludedDomain other) {
 		
@@ -41,15 +51,26 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 				String C = StringUtility.intersect(this.map.get(key).C, other.map.get(key).C);
 				String MC = StringUtility.union(this.map.get(key).MC, other.map.get(key).MC);
 				
-				if(MC.contains("K") || MC.contains("k"))
+				StringRepresentation strRepr = new StringRepresentation();
+				if(this.map.get(key).bound == Utils.Bounds.TOP || other.map.get(key).bound == Utils.Bounds.TOP) {
 					MC = "k";
+					strRepr.bound = Utils.Bounds.TOP;
+				}
 				
-				HMtoAdd.put(entry.getKey(), new StringRepresentation(key, C, MC));
+				strRepr.C = C;
+				strRepr.MC = MC;
+				strRepr.name = key;
+				
+				HMtoAdd.put(entry.getKey(), strRepr);
 			}
 		}
 		return new CharIsIncludedDomain(HMtoAdd);
 	}
 
+	/**
+	 * An abstract string S is less or equal than another abstract string T, if S is the
+	 * bottom of the domain or if T.C is included in S.C and S.MC is included in T.MC
+	 */
 	@Override
 	public boolean lessOrEqual(CharIsIncludedDomain other) {
 		
@@ -90,6 +111,9 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 		return generalFlag;
 	}
 
+	/**
+	 * In domains with finite height, the lub operator is also a widening operator because it converges in finite time
+	 */
 	@Override
 	public CharIsIncludedDomain widening(CharIsIncludedDomain succ) {
 		return lub(succ);
@@ -107,7 +131,10 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 		return charIsIncludedDomain;
 	}
 	
-	
+	/**
+	 * @param expr: can be a StringConstant or a VariableIdentifier
+	 * @return a StringRepresentation instance containing the content of expr
+	 */
 	private StringRepresentation getContent(Expression expr) {
 		StringRepresentation res = new StringRepresentation();
 		
@@ -122,11 +149,13 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 			
 			StringRepresentation storedValue = map.get(vi.toString());
 			if(storedValue == null) {
-				res.MC = "K";
-				res.C = "";
+				res.setTop();
 			} else {
 				res.C = storedValue.C;
 				res.MC = storedValue.MC;
+				
+				if(storedValue.bound == Utils.Bounds.TOP)
+					res.bound = Utils.Bounds.TOP;
 			}
 		}
 		
@@ -134,6 +163,12 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 	}
 
 
+	/**
+	 * If the input statement is a StringConstant, the function simply add an entry to the hash map.
+	 * Otherwise, if st is a BinaryArithmeticExpression, the function evaluate the expression and update the hash map accordingly.
+	 * 
+	 * If the input statement is not an Assignment no changes are done. 
+	 */
 	@Override
 	public CharIsIncludedDomain smallStepSemantics(Statement st) {
 		
@@ -155,6 +190,7 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 			}
 			
 			if(expr instanceof BinaryArithmeticExpression) {
+				
 				BinaryArithmeticExpression assignedExpr = (BinaryArithmeticExpression)expr;
 				Expression leftSide = assignedExpr.getLeft();
 				Expression rightSide = assignedExpr.getRight();
@@ -198,7 +234,6 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 				HMtoAdd.put(key, result);
 				
 				return new CharIsIncludedDomain(HMtoAdd);
-				
 			}
 			
 			
@@ -209,13 +244,11 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 
 	@Override
 	public CharIsIncludedDomain assume(Expression currentExpression) {
-		//TODO
 		return this;
 	}
 
 	@Override
 	public boolean satisfy(Expression currentExpression) {
-		// TODO
 		return false;
 	}
 
@@ -252,5 +285,7 @@ public class CharIsIncludedDomain implements Lattice<CharIsIncludedDomain>, Sema
 			return false;
 		return true;
 	}
+
+	
 
 }
