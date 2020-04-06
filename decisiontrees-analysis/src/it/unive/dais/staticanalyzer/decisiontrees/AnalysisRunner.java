@@ -102,9 +102,10 @@ public class AnalysisRunner {
 						List<Double> vals = values.get(i);
 						if(verbose) logger.info("Beginning the analysis of case "+i);
 						long starttime = System.currentTimeMillis();
-						boolean result = runSingleAnalysis(vals, domain, numberOfPartitions, attackerModel, budget, joinPartitioning, cfgAttacker, cfgTree, dotresults== null ? null : dotresults+File.separator+i+"_attacker.dot", dotresults== null ? null : dotresults+File.separator+i+"_tree.dot");
+						String resultstring = runSingleAnalysis(vals, domain, numberOfPartitions, attackerModel, budget, joinPartitioning, cfgAttacker, cfgTree, dotresults== null ? null : dotresults+File.separator+i+"_attacker.dot", dotresults== null ? null : dotresults+File.separator+i+"_tree.dot");
+						boolean result = Boolean.parseBoolean(resultstring.substring(0, resultstring.indexOf('\n')));
 						long totallocaltime = System.currentTimeMillis() - starttime;
-						String toDump = result+System.lineSeparator()+totallocaltime;
+						String toDump = result+System.lineSeparator()+totallocaltime+"\n"+resultstring.substring(resultstring.indexOf('\n'));
 						totaltime += totallocaltime;
 						Files.writeString(check.toPath(), toDump);
 						if(result) {
@@ -137,7 +138,7 @@ public class AnalysisRunner {
 		}
 	}
 
-	private static boolean runSingleAnalysis(List<Double> vals, String domain, int numberOfPartitions, Map<Integer, Attack> attackerModel,
+	private static String runSingleAnalysis(List<Double> vals, String domain, int numberOfPartitions, Map<Integer, Attack> attackerModel,
 			long budget, boolean joinPartitioning, CFG cfgAttacker, CFG cfgTree, String dotresultsattacker, String dotresultstree) throws ParseException, IOException {
 
 		
@@ -152,7 +153,9 @@ public class AnalysisRunner {
 		}
 		String elaboratedDomain = tracePartitioningParameters.size()==0 ? domain : "TracePartitioning:"+String.join(";", tracePartitioningParameters)+":"+domain;
 		
-		logger.info("Domain used for the analysis:"+elaboratedDomain);
+		if(verbose) logger.info("Domain used for the analysis:"+elaboratedDomain);
+		
+		long starttime = System.currentTimeMillis();
 		
 		//We then initialize the entry state by initializing all the values of the features
 		AbstractAnalysisState<?> entryState = JavaCLI.getAbstractState(elaboratedDomain);
@@ -175,7 +178,7 @@ public class AnalysisRunner {
 		
 		if(dotresultsattacker!=null)
 			analysis.dumpToDotFile(dotresultsattacker);
-		
+		long endattackertime = System.currentTimeMillis();
 		//We extract the exit state
 		ReturnStatement lastReturn = null;
 		for(Statement st: cfgAttacker.statements())
@@ -193,11 +196,17 @@ public class AnalysisRunner {
 		if(dotresultstree!=null)
 			analysis.dumpToDotFile(dotresultstree);
 		Collection<Warning> result = JavaCLI.getChecker("AssertChecker").check(analysis);
+		long endtime = System.currentTimeMillis();
+		String stringresult;
 		if(result.size()==0)
-			return true;
+			stringresult="true\n";
 		else if(result.size()==1)
-			return false;
+			stringresult="false\n";
 		else throw new UnsupportedOperationException("Impossible case");
+		stringresult+="Abstract domain:"+elaboratedDomain+"\n";
+		stringresult+="Attacker analysis time:"+(endattackertime-starttime)+" msec\n";
+		stringresult+="Tree analysis time:"+(endtime-endattackertime)+" msec\n";
+		return stringresult;
 	}
 
 	private static <T extends Lattice<T>> Lattice<?> projectTracePartitioningOut(Lattice<?> semanticDomainState) {
