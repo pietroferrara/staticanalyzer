@@ -130,7 +130,6 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
             	Map<Integer, Integer> keyTranslated = getMapIntInt((String) key);
             	result.function.put(keyTranslated, Apron.getStateFromString(env, jsonObject.get(key).toString()));
             }
-            System.out.println(jsonObject);
         }
         catch(Exception e) {throw new UnsupportedOperationException("Error while reading the JSON file", e);}
         return result;
