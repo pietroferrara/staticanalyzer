@@ -20,6 +20,11 @@ import it.unive.dais.staticanalyzer.cfg.statement.SkipStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
 
+import java.io.IOException;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.logging.Logger;
 
 import apron.*;
@@ -357,4 +362,119 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 		return state.toString();
 	}
 	
+	static public Apron getStateFromString(apron.Environment env, String state) {
+		String[] constraints = state.substring(1, state.length()-1).split(";");
+		List<Lincons1> translatedconstraints = new ArrayList<>();
+		for(String constr : constraints)
+			translatedconstraints.add(Apron.translate(env, constr));
+		try {
+			return new Apron(new Abstract1(manager, translatedconstraints.toArray(new Lincons1[translatedconstraints.size()])));
+		} catch (ApronException e) {
+			throw new UnsupportedOperationException("Apron library crashed", e);
+		}
+	}
+	
+	static private class SingleComponent {
+		private String coefficient;
+		private String variable;
+		private int characters;
+
+		private SingleComponent(String coefficient, String variable, int characters) {
+			this.coefficient = coefficient;
+			this.variable = variable;
+			this.characters = characters;
+		}
+		
+		static SingleComponent parseNextComponent(String s, int start) {
+			int i = start;
+			while(
+				i < s.length() && (	
+				s.charAt(i) == '+' ||
+				s.charAt(i) == '-' ||
+				s.charAt(i) == '.' ||
+				Character.isDigit(s.charAt(i)))
+			)
+				i++;
+			if(i==start) return null;
+			String coefficient = s.substring(start, i);
+			int current = i;
+			while(i < s.length() && (
+					Character.isAlphabetic(s.charAt(i)) || Character.isDigit(s.charAt(i)) || s.charAt(i)=='_'))
+				i++;
+			String variable = i==current ? null : s.substring(current, i);
+			return new SingleComponent(coefficient, variable, i);
+		}
+		@Override
+		public String toString() {
+			return coefficient + (variable == null ? "" : variable);
+		}
+	}
+
+	private static Lincons1 translate(apron.Environment env, String constr) {
+		DoubleScalar[] scalars = new DoubleScalar[env.getSize()];
+		DoubleScalar constantvalue = null;
+		String constrCleaned = constr.trim().replace(" ", "").replace("\n", "");
+		SingleComponent current = SingleComponent.parseNextComponent(constrCleaned, 0);
+		List<SingleComponent> components = new ArrayList<>();
+		int start = current.characters;
+		while(current!=null) {
+			components.add(current);
+			if(current.variable != null) {
+				int dim = env.dimOfVar(current.variable);
+				if(scalars[dim]!=null)
+					throw new UnsupportedOperationException("The same variables is contained more than once in the linear constraint");
+				scalars[dim] = new DoubleScalar(Double.parseDouble(current.coefficient));
+			}
+			else {
+				if(constantvalue!=null) throw new UnsupportedOperationException("The same variables is contained more than once in the linear constraint");
+				constantvalue = new DoubleScalar(Double.parseDouble(current.coefficient));
+			}
+			current = SingleComponent.parseNextComponent(constrCleaned, start);
+			if(current!=null)
+				start = current.characters;
+		}
+		
+		String operator = extractOperator(constrCleaned, start);
+		start += operator.length();
+		
+		int k; 
+		switch(operator) {
+			case ">=" : k = Lincons1.SUPEQ; break;
+			case ">" : k = Lincons1.SUP; break;
+			case "==" : k = Lincons1.EQ; break;
+			case "<>" : k = Lincons1.DISEQ; break;
+			default : throw new UnsupportedOperationException("This operator is not supported: "+operator);
+		}
+		
+		SingleComponent rightSide = SingleComponent.parseNextComponent(constrCleaned, start);
+		if(rightSide.variable!=null)
+			throw new UnsupportedOperationException("This is not suppoerted");
+		Scalar scalar = new DoubleScalar(Double.parseDouble(rightSide.coefficient));
+		
+		if(! constrCleaned.substring(rightSide.characters).isEmpty())
+			throw new UnsupportedOperationException("Cannot parse constraint"+constr);
+		
+		for(int i = 0; i < scalars.length; i++)
+			if(scalars[i]==null)
+				scalars[i] = new DoubleScalar(0);
+		if(constantvalue == null)
+			constantvalue = new DoubleScalar(0);
+		return new Lincons1(k, new Linexpr1(env, scalars, constantvalue), scalar);
+	}
+	
+	public apron.Environment getEnvironment() {
+		return this.state.getEnvironment();
+	}
+	
+	static String extractOperator(String s, int start) {
+		int i = start;
+		while(s.charAt(i) == '>' ||
+			s.charAt(i) == '<' ||
+			s.charAt(i) == '=' ||
+			s.charAt(i) == '!'
+		)
+			i++;
+		if(i==start) return null;
+		else return s.substring(start, i);
+	}
 }

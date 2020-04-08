@@ -36,6 +36,7 @@ import it.unive.dais.staticanalyzer.cfg.JavaBodyParser;
 import it.unive.dais.staticanalyzer.cfg.CFG;
 import it.unive.dais.staticanalyzer.cfg.CFGAnalysisResults;
 import it.unive.dais.staticanalyzer.cfg.ParsingException;
+import it.unive.dais.staticanalyzer.cfg.statement.ReturnStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.property.AssertChecker;
 import it.unive.dais.staticanalyzer.property.Checker;
@@ -90,6 +91,23 @@ public class JavaCLI {
 		if(analysisOptions.getOutput()!=null && ! analysisOptions.getOutput().isEmpty())
 			analysis.dumpToDotFile(analysisOptions.getOutput());
 		logger.info("Abstract results dumped to "+analysisOptions.getOutput());
+		
+		//FIXME: REMOVE THIS
+		/*ReturnStatement exit = null;
+		for(Statement st : cfg.statements())
+			if(st instanceof ReturnStatement)
+				if(exit==null || exit.getLine() < st.getLine() )
+					exit = (ReturnStatement) st;
+		TracePartitioning result = (TracePartitioning) analysis.getExitState(exit).getSemanticDomainState();
+		result.dumpToJSON("temp.json");
+		apron.Environment env = null;
+		for(Object key : result.getKeys())
+			if(env==null) env = ((Apron) result.getState(key)).getEnvironment();
+			else env = env.lce(((Apron) result.getState(key)).getEnvironment());
+		result = TracePartitioning.loadFromJSON(new Apron(), env, "temp.json");
+		result.dumpToJSON("temp1.json");*/
+		
+		
 		
 		Checker c = getChecker(analysisOptions.getChecker());
 		logger.info("Applying checker "+analysisOptions.getChecker());

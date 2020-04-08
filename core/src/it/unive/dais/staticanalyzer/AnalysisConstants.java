@@ -12,7 +12,7 @@ public class AnalysisConstants {
 	/**
 	 * Number of iterations of the fixpoint algorithm before applying widening
 	 */
-	public static int WIDENING_LIMIT = 20;
+	public static int WIDENING_LIMIT = Integer.MAX_VALUE;
 	
 	private static String forgetVariable = "random";//Special variable name representing a random value
 	

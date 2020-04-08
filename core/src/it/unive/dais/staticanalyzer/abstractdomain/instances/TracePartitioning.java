@@ -1,9 +1,16 @@
 package it.unive.dais.staticanalyzer.abstractdomain.instances;
 
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.io.Reader;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
+
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
@@ -88,7 +95,6 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
 		return true;
 	}
 	
-
 	private String keyName;
 	@Override
 	public String toString() {
@@ -101,4 +107,42 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
 		return result;
 	}
 
+	public void dumpToJSON(String path) throws IOException {
+		JSONObject result = new JSONObject();
+		try(FileWriter writer = new FileWriter(path)) {
+			for(Map<Integer, Integer> key : this.function.keySet()) {
+				JSONObject jsonkey = new JSONObject(key);
+				result.put(jsonkey, this.function.get(key).toString());
+			}	
+			writer.write(result.toString());
+		}
+	}
+
+
+	public static <T extends Lattice<T> & SemanticDomain<T>>  TracePartitioning loadFromJSON(T domain, apron.Environment env, String path) throws IOException {
+		TracePartitioning result = new TracePartitioning(domain, new HashMap<>(), new HashSet<>());
+		result.function = new HashMap<>();
+        JSONParser parser = new JSONParser();
+
+        try (Reader reader = new FileReader(path)) {
+            JSONObject jsonObject = (JSONObject) parser.parse(reader);
+            for(Object key : jsonObject.keySet()) {
+            	Map<Integer, Integer> keyTranslated = getMapIntInt((String) key);
+            	result.function.put(keyTranslated, Apron.getStateFromString(env, jsonObject.get(key).toString()));
+            }
+            System.out.println(jsonObject);
+        }
+        catch(Exception e) {throw new UnsupportedOperationException("Error while reading the JSON file", e);}
+        return result;
+	}
+
+	private static Map<Integer, Integer> getMapIntInt(String key) {
+		Map<Integer, Integer> result = new HashMap<>();
+		for(String o : key.split(";")) {
+			String[] s = o.replace("\"", "").replace("}", "").replace("{", "").split(":");
+			result.put(Integer.valueOf(s[0]), Integer.valueOf(s[1]));
+		}
+		return result;
+	}
+	
 }
