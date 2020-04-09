@@ -136,6 +136,10 @@ public class AttackerInferrer {
 			if(st instanceof ReturnStatement && (lastReturn==null || lastReturn.getLine() < st.getLine()))
 				lastReturn = (ReturnStatement) st;
 		TracePartitioning attackerState = (TracePartitioning) analysis.getExitState(lastReturn).getSemanticDomainState();
+		
+		String[] vars = {"budget", "xAiuto", "continua", "brandom"};
+		attackerState.forgetVariables(vars);
+		
 		attackerState.dumpToJSON(jsonresultattacker);
 		
 		

@@ -43,7 +43,7 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 
 	private static Manager manager;
 	
-	private final Abstract1 state;
+	final Abstract1 state;
 	
 	/**
 	 * The Aprong numerical domain 
@@ -122,7 +122,7 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 		}
 	}
 	
-	private Apron(Abstract1 state) {
+	Apron(Abstract1 state) {
 		this.state = state;
 	}
 	
@@ -363,15 +363,20 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	}
 	
 	static public Apron getStateFromString(apron.Environment env, String state) {
+		Lincons1[] translatedconstraints = getConstraintsFromString(env, state);
+		try {
+			return new Apron(new Abstract1(manager, translatedconstraints));
+		} catch (ApronException e) {
+			throw new UnsupportedOperationException("Apron library crashed", e);
+		}
+	}
+
+	static public Lincons1[] getConstraintsFromString(apron.Environment env, String state) {
 		String[] constraints = state.substring(1, state.length()-1).split(";");
 		List<Lincons1> translatedconstraints = new ArrayList<>();
 		for(String constr : constraints)
 			translatedconstraints.add(Apron.translate(env, constr));
-		try {
-			return new Apron(new Abstract1(manager, translatedconstraints.toArray(new Lincons1[translatedconstraints.size()])));
-		} catch (ApronException e) {
-			throw new UnsupportedOperationException("Apron library crashed", e);
-		}
+		return translatedconstraints.toArray(new Lincons1[translatedconstraints.size()]);
 	}
 	
 	static private class SingleComponent {
@@ -476,5 +481,9 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 			i++;
 		if(i==start) return null;
 		else return s.substring(start, i);
+	}
+
+	public static Manager getManager() {
+		return manager;
 	}
 }

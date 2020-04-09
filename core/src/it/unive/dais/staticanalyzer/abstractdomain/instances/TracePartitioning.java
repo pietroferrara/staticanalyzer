@@ -4,14 +4,21 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.Reader;
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 
+import apron.Abstract1;
+import apron.ApronException;
+import apron.Environment;
+import apron.Lincons1;
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.generic.FunctionalDomain;
@@ -118,7 +125,23 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
 		}
 	}
 
+	public static Map<Map<Integer, Integer>, Lincons1[]> loadConstraintsFromJSON(apron.Environment env, String path) throws IOException {
+		Map<Map<Integer, Integer>, Lincons1[]> result = new HashMap<>();
+        JSONParser parser = new JSONParser();
 
+        try (Reader reader = new FileReader(path)) {
+            JSONObject jsonObject = (JSONObject) parser.parse(reader);
+            for(Object key : jsonObject.keySet()) {
+            	Map<Integer, Integer> keyTranslated = getMapIntInt((String) key);
+            	String stringConstraint = jsonObject.get(key).toString();
+            	if(! stringConstraint.equals("<empty>"))
+            		result.put(keyTranslated, Apron.getConstraintsFromString(env, stringConstraint));
+            }
+        }
+        catch(Exception e) {throw new UnsupportedOperationException("Error while reading the JSON file", e);}
+        return result;
+	}
+	
 	public static <T extends Lattice<T> & SemanticDomain<T>>  TracePartitioning loadFromJSON(T domain, apron.Environment env, String path) throws IOException {
 		TracePartitioning result = new TracePartitioning(domain, new HashMap<>(), new HashSet<>());
 		result.function = new HashMap<>();
@@ -137,9 +160,43 @@ public class TracePartitioning<Domain extends SemanticDomain<Domain> & Lattice<D
 
 	private static Map<Integer, Integer> getMapIntInt(String key) {
 		Map<Integer, Integer> result = new HashMap<>();
-		for(String o : key.split(";")) {
+		for(String o : key.split(",")) {
 			String[] s = o.replace("\"", "").replace("}", "").replace("{", "").split(":");
 			result.put(Integer.valueOf(s[0]), Integer.valueOf(s[1]));
+		}
+		return result;
+	}
+
+	public void forgetVariables(String[] vars) {
+		for(Map<Integer, Integer> key : this.function.keySet()) {
+			Apron d = (Apron) this.function.get(key);
+			if(! d.lessOrEqual(d.bottom())) {
+				Abstract1 state = d.state;
+				for(String var : vars) {
+					try {
+						state.forget(d.getManager(), var, false);
+					} catch (ApronException e) {
+						throw new UnsupportedOperationException("Not supported");
+					}
+				}
+				this.function.put(key, (Domain) new Apron(state));
+			}
+		}
+	}
+
+	public static TracePartitioning createFromLincons1(Environment env, List<Lincons1> constraintsTestCase,
+			Map<Map<Integer, Integer>, Lincons1[]> attackerConstraint) {
+		TracePartitioning result = new TracePartitioning<>(new Apron(), new HashMap<>(), new HashSet<>());
+		result.function = new HashMap<>();
+		for(Map<Integer, Integer> key : attackerConstraint.keySet()) {
+			List<Lincons1> constr = new ArrayList<Lincons1>(Arrays.asList(attackerConstraint.get(key)));
+			constr.addAll(constraintsTestCase);
+			try {
+				result.function.put(key, new Apron(new Abstract1(Apron.getManager(), constr.toArray(new Lincons1[constr.size()]))));
+			} catch (ApronException e) {
+				throw new UnsupportedOperationException("This is not supported");
+			}
+			
 		}
 		return result;
 	}
