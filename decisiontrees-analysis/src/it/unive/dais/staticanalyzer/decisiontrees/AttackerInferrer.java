@@ -60,11 +60,9 @@ public class AttackerInferrer {
 				if(cmd.hasOption('v'))
 					verbose = true;
 				String csv = cmd.getOptionValue('c');
-				String domain = cmd.getOptionValue('d');
 				String attacker = cmd.getOptionValue('a');
 				String dotresults = cmd.getOptionValue('r');
 				String summaryresults = cmd.getOptionValue('s');
-				String output = cmd.getOptionValue('o');
 				String widening = cmd.getOptionValue('w');
 				String javaAttacker = cmd.getOptionValue("ai");
 				String jsonOutputAttacker = cmd.getOptionValue("j");
@@ -77,15 +75,11 @@ public class AttackerInferrer {
 				List<String> header = Utility.readCsvHeader(csv);
 				Map<Integer, Attack> attackerModel = Attack.readJSONAttacker(attacker, header);
 				long budget = Attack.readJSONAttackerBudget(attacker);
-				File directory = new File(output);
-				if(! directory.isDirectory()) 
-					throw new ParseException("The output directory is not a directory!");
-				
-						String resultstring = runSingleAnalysis(domain, numberOfPartitions, attackerModel, budget, cfgAttacker, dotresults== null ? null : dotresults+File.separator+"attacker.dot", jsonOutputAttacker);
+				String resultstring = runSingleAnalysis("Apron:Polka", numberOfPartitions, attackerModel, budget, cfgAttacker, dotresults== null ? null : dotresults+File.separator+"attacker.dot", jsonOutputAttacker);
 
-						Path target = new File(summaryresults).toPath();
-						Files.writeString(target, resultstring);
-				}
+				Path target = new File(summaryresults).toPath();
+				Files.writeString(target, resultstring);
+			}
 		}
 		catch(ParseException e) {
 			System.err.println(e.getMessage());
@@ -113,7 +107,7 @@ public class AttackerInferrer {
 		//We then initialize the entry state by initializing all the values of the features
 		AbstractAnalysisState<?> entryState = JavaCLI.getAbstractState(elaboratedDomain);
 
-		VariableIdentifier random = new VariableIdentifier("random", -1, -1);
+		/*VariableIdentifier random = new VariableIdentifier("random", -1, -1);
 		for(Integer i : attackerModel.keySet()) {
 			VariableIdentifier varId = new VariableIdentifier("x"+i, -1, -1);
 			VariableIdentifier initVarId = new VariableIdentifier("x"+i+"_init", -1, -1);
@@ -121,7 +115,7 @@ public class AttackerInferrer {
 			entryState = entryState.smallStepSemantics(new Assignment(initVarId, random, -1, -1));
 			entryState = entryState.smallStepSemantics(new VariableDeclaration(new Type.DoubleType(-1, -1), varId, -1, -1));
 			entryState = entryState.smallStepSemantics(new Assignment(varId, initVarId, -1, -1));
-		}
+		}*/
 		
 		//We analyze the attacker with the partitionend domain
 		CFGAnalysisResults<?> analysis =
@@ -137,7 +131,7 @@ public class AttackerInferrer {
 				lastReturn = (ReturnStatement) st;
 		TracePartitioning attackerState = (TracePartitioning) analysis.getExitState(lastReturn).getSemanticDomainState();
 		
-		String[] vars = {"budget", "xAiuto", "continua", "brandom"};
+		String[] vars = {"budget", "continua", "brandom"};
 		attackerState.forgetVariables(vars);
 		
 		attackerState.dumpToJSON(jsonresultattacker);
@@ -162,7 +156,8 @@ public class AttackerInferrer {
 	}
 
 	private static String extractTracePartitioningParameter(Attack attack, long budget, int maxPartitions) {
-		return attack.getLine()+","+(Math.min(maxPartitions, (long) (budget/attack.getCost())));
+		//return attack.getLine()+","+(Math.min(maxPartitions, (long) (budget/attack.getCost())));
+		return attack.getLine()+",1";//With the new model we need just to distinguish when we can enter the attack and when not
 	}
 
 	private static CFG readCFG(String java) throws FileNotFoundException, IOException {
@@ -181,8 +176,6 @@ public class AttackerInferrer {
 
 	private static Options getOptions() {
 		Option csv = Option.builder("c").argName("csv file").desc("CSV file with data").longOpt("csv").hasArg(true).required(true).build();
-		Option domain = Option.builder("d").argName("abstract domain").desc("Abstract domain for the analysis").longOpt("domain").hasArg(true).required(true).build();
-		Option output = Option.builder("o").argName("output directory").desc("Directory where to dump the result of each case").longOpt("output").hasArg(true).required(true).build();
 		Option cfgresults = Option.builder("r").argName("dot results").desc("Directory where to dump the dot results of all the analyses").longOpt("dotresults").hasArg(true).build();
 		Option verbose = Option.builder("v").desc("Print verbose logging").longOpt("verbose").hasArg(false).build();
 		Option summaryresult = Option.builder("s").argName("summary results").desc("File where to dump a text file with all the instances wrongly classified and the total analysis time").longOpt("summaryresults").hasArg(true).required(true).build();
@@ -194,9 +187,7 @@ public class AttackerInferrer {
 		
 		return new Options()
 				.addOption(csv)
-				.addOption(domain)
 				.addOption(cfgresults)
-				.addOption(output)
 				.addOption(verbose)
 				.addOption(summaryresult)
 				.addOption(widening)

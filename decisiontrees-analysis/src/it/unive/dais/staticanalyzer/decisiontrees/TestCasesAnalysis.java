@@ -76,7 +76,7 @@ public class TestCasesAnalysis {
 				String jsonAttackerState = cmd.getOptionValue("as");
 				int numberOfPartitions = cmd.hasOption('n') ? Integer.valueOf(cmd.getOptionValue('n')): Integer.MAX_VALUE;
 				
-				Apron.setManager(NumericalDomain.Box);
+				Apron.setManager(NumericalDomain.Polka);
 				
 				AnalysisConstants.WIDENING_LIMIT = Integer.parseInt(widening);
 				
@@ -154,6 +154,9 @@ public class TestCasesAnalysis {
 		for(Integer key : attackerModel.keySet()) {
 			realVars.add("x"+key);
 			realVars.add("x"+key+"_init");
+			realVars.add("x"+key+"_counter");
+			realVars.add("x"+key+"_min");
+			realVars.add("x"+key+"_max");
 		}
 		for(int i = 0; i < header.size(); i++) {
 			int index = i+1;
@@ -193,6 +196,22 @@ public class TestCasesAnalysis {
 			scalar[env.dimOfVar(variable)] = new DoubleScalar(1);
 			Lincons1 constraint = new Lincons1(Lincons1.EQ, new Linexpr1(env, scalar, new DoubleScalar(0-vals.get(i-1).doubleValue())), new DoubleScalar(0));
 			constraintsTestCase.add(constraint);
+			if(attackerModel.containsKey(Integer.valueOf(i))) {
+				DoubleScalar[] scalarmin = new DoubleScalar[env.getSize()];
+				DoubleScalar[] scalarmax = new DoubleScalar[env.getSize()];
+				for(int j = 0; j < env.getSize(); j++) {
+					scalarmin[j] = new DoubleScalar(0);
+					scalarmax[j] = new DoubleScalar(0);
+				}
+				scalarmin[env.dimOfVar("x"+i)] = new DoubleScalar(1);
+				scalarmax[env.dimOfVar("x"+i)] = new DoubleScalar(-1);
+				scalarmin[env.dimOfVar("x"+i+"_min")] = new DoubleScalar(-1);
+				scalarmax[env.dimOfVar("x"+i+"_max")] = new DoubleScalar(1);
+				constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmin, new DoubleScalar(0)), new DoubleScalar(0));
+				constraintsTestCase.add(constraint);
+				constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmax, new DoubleScalar(0)), new DoubleScalar(0));
+				constraintsTestCase.add(constraint);
+			}
 		}
 		
 		TracePartitioning initialStateForTree = TracePartitioning.createFromLincons1(env, constraintsTestCase, attackerConstraint);

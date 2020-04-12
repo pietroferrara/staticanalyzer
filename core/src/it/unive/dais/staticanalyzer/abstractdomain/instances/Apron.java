@@ -446,7 +446,7 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 		switch(operator) {
 			case ">=" : k = Lincons1.SUPEQ; break;
 			case ">" : k = Lincons1.SUP; break;
-			case "==" : k = Lincons1.EQ; break;
+			case "=" : k = Lincons1.EQ; break;
 			case "<>" : k = Lincons1.DISEQ; break;
 			default : throw new UnsupportedOperationException("This operator is not supported: "+operator);
 		}
