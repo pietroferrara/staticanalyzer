@@ -1,5 +1,6 @@
 package it.unive.dais.staticanalyzer.abstractdomain.instances;
 
+import it.unive.dais.staticanalyzer.cfg.expression.ArrayCreationExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.expression.IntegerConstant;
 
@@ -61,6 +62,8 @@ public class IntegerNumericalConstantDomain implements NonRelationalDomain<Integ
 	public IntegerNumericalConstantDomain eval(Expression expr, Environment<IntegerNumericalConstantDomain> env) {
 		if(expr instanceof IntegerConstant)
 			return new IntegerNumericalConstantDomain(((IntegerConstant) expr).getValue());
+		else if(expr instanceof ArrayCreationExpression)
+			return new IntegerNumericalConstantDomain(0);
 		else return top();
 	}
 	

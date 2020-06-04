@@ -43,6 +43,26 @@ public abstract class Type extends ParsedBlock {
 	}
 
 	/**
+	 * Array type
+	 * @author Pietro Ferrara
+	 *
+	 */
+	public static class ArrayType extends Type {
+		private Type innerType;
+
+		ArrayType(Type innerType, int line, int column) {
+			super(line, column);
+			this.innerType = innerType;
+		}
+		
+
+		public String toString() {
+			return innerType.toString()+"[]";
+		}
+	
+		
+	}
+	/**
 	 * Primitive types (int, long, double, etc..)
 	 * @author Pietro Ferrara
 	 *

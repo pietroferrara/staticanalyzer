@@ -149,7 +149,6 @@ public class TestCasesAnalysis {
 	}
 
 	private static Environment createInitialEnvironment(Map<Integer, Attack> attackerModel, List<String> header) {
-		apron.Environment result = new apron.Environment();
 		List<String> realVars = new ArrayList<>();
 		for(Integer key : attackerModel.keySet()) {
 			realVars.add("x"+key);

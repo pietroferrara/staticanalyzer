@@ -76,7 +76,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 		CFGAnalysisResults<T> nextIteration = prevIteration.singleIteration();
 		int iteration = 1;
 		while(! nextIteration.lessOrEqual(prevIteration)) {
-			logger.fine("Iteration n."+iteration);
+			logger.info("Iteration n."+iteration);
 			if(iteration <= AnalysisConstants.WIDENING_LIMIT)
 				prevIteration = prevIteration.lub(nextIteration);
 			else prevIteration = prevIteration.widening(nextIteration);

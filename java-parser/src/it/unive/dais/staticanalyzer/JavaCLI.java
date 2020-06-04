@@ -160,7 +160,7 @@ public class JavaCLI {
 	public static <T extends SemanticDomain<T> & Lattice<T>> T extractBasicState(String domain) throws ParseException {
 		String[] params = domain.split(":");
 		switch(params[0]) {
-			case "IntegerNumericalConstantDomain": new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom());
+			case "IntegerNumericalConstantDomain": return (T) new Environment<IntegerNumericalConstantDomain>(new IntegerNumericalConstantDomain(1).bottom());
 			case "Apron": 
 				if(params.length==1)
 					throw new ParseException("Domain Apron needs the numerical domain, syntax -d Apron:<numerical_domain>");

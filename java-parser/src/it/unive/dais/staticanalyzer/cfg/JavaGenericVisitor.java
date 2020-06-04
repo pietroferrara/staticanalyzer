@@ -15,6 +15,9 @@ import it.unive.dais.staticanalyzer.cfg.expression.BooleanExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.CharConstant;
 import it.unive.dais.staticanalyzer.cfg.expression.Constant;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
+import it.unive.dais.staticanalyzer.cfg.expression.ArrayAccessExpression;
+import it.unive.dais.staticanalyzer.cfg.expression.ArrayCreationExpression;
+import it.unive.dais.staticanalyzer.cfg.expression.AssignableExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.IntegerConstant;
 import it.unive.dais.staticanalyzer.cfg.expression.NegatedBooleanExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.NullConstant;
@@ -23,7 +26,10 @@ import it.unive.dais.staticanalyzer.cfg.expression.StringConstant;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
+import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.ArrayCreatorRestContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.ClassOrInterfaceTypeContext;
+import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.CreatedNameContext;
+import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.CreatorContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.ExpressionContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.FloatLiteralContext;
 import it.unive.dais.staticanalyzer.parser.java.generated.JavaParser.IntegerLiteralContext;
@@ -46,10 +52,29 @@ public class JavaGenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 	public Type visitTypeType(TypeTypeContext ctx) {
 		if(ctx.annotation()!=null)
 			throw new UnsupportedOperationException("Annotation in types not yet supported");
-		avoidArrays(ctx);
+		if(isArrayType(ctx))
+			return this.visitArrayType(ctx);
 		if(ctx.classOrInterfaceType()!=null)
 			return this.visitClassOrInterfaceType(ctx.classOrInterfaceType());
 		else return this.visitPrimitiveType(ctx.primitiveType());
+	}
+
+	private Type visitArrayType(TypeTypeContext ctx) {
+		Object inner = ctx.children.get(0);
+		if(inner instanceof PrimitiveTypeContext) {
+			if(ctx.children.size()!=3 || ! ctx.children.get(1).toString().equals("[") || ! ctx.children.get(2).toString().equals("]"))
+				throw new UnsupportedOperationException("Only monodimensional arrays are supported");
+			Type innerType = this.visitPrimitiveType((PrimitiveTypeContext) inner);
+			return new Type.ArrayType(innerType,  ctx.start.getLine(), ctx.start.getStartIndex());
+		}
+		else throw new UnsupportedOperationException("Only arrays of primitive types are supported");
+	}
+
+	private boolean isArrayType(ParserRuleContext ctx) {
+		for(ParseTree child : ctx.children)
+			if(child instanceof TerminalNode && ((TerminalNode) child).getText().equals("["))
+				return true;
+		return false;
 	}
 
 	private void avoidArrays(ParserRuleContext ctx) {
@@ -83,11 +108,33 @@ public class JavaGenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 
 	@Override
 	public Expression visitExpression(ExpressionContext ctx) {
-		avoidArrays(ctx);
 		if(ctx.methodCall()!=null)
 			throw new UnsupportedOperationException("Method calls not yet supported");
-		if(ctx.NEW()!=null)
+		if(ctx.NEW()!=null) {
+			CreatorContext creator = (CreatorContext) ctx.children.get(1);
+			if(creator.children.size()==2 &&
+				creator.children.get(0) instanceof CreatedNameContext && 
+				creator.children.get(1) instanceof ArrayCreatorRestContext
+			) {
+				ParseTree innerType = creator.getChild(0).getChild(0);
+				if(! (innerType instanceof PrimitiveTypeContext))
+					throw new UnsupportedOperationException("Only arrays with primitive types are supported");
+				Type arraytype = this.visitPrimitiveType((PrimitiveTypeContext) innerType);
+				ParseTree arrayRestCreator = creator.getChild(1);
+				if(! (arrayRestCreator instanceof ArrayCreatorRestContext))
+					throw new UnsupportedOperationException("Unsupported creation of arrays");
+				Expression exp = this.visitArrayCreatorRest((ArrayCreatorRestContext) arrayRestCreator);
+				return new ArrayCreationExpression(arraytype, exp, ctx.start.getLine(), ctx.start.getStartIndex());
+			}
 			throw new UnsupportedOperationException("Instantation of object not yet supported");
+			
+		}
+		if(ctx.getChildCount()==4 && ctx.getChild(1).toString().equals("[") && ctx.getChild(3).toString().equals("]")) {
+			VariableIdentifier variableName = (VariableIdentifier) this.visitExpression((ExpressionContext) ctx.getChild(0));
+			Expression index = this.visitExpression((ExpressionContext) ctx.getChild(2));
+			return new ArrayAccessExpression(variableName, index, ctx.start.getLine(), ctx.start.getStartIndex());
+		}
+		avoidArrays(ctx);
 		if(ctx.typeType()!=null)
 			throw new UnsupportedOperationException("Type casting not yet supported");
 		if(ctx.postfix!=null)
@@ -155,8 +202,8 @@ public class JavaGenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 		switch(binaryOperator) {
 			case "=":
 				Expression assignedVariable = this.visitExpression(ctx.expression(0));
-				if(assignedVariable instanceof VariableIdentifier)
-					return new Assignment((VariableIdentifier) assignedVariable, this.visitExpression(ctx.expression(1)), ctx.start.getLine(), ctx.start.getStartIndex());
+				if(assignedVariable instanceof AssignableExpression)
+					return new Assignment((AssignableExpression) assignedVariable, this.visitExpression(ctx.expression(1)), ctx.start.getLine(), ctx.start.getStartIndex());
 				else throw new UnsupportedOperationException("Assignment of "+assignedVariable+" (type "+assignedVariable.getClass().getTypeName()+") not yet supported");
 		}
 		throw new UnsupportedOperationException("Unsupported expression: "+ctx.getText());
@@ -179,6 +226,15 @@ public class JavaGenericVisitor extends JavaParserBaseVisitor<ParsedBlock>{
 		if(ctx.literal()!=null)
 			return this.visitLiteral(ctx.literal());
 		throw new UnsupportedOperationException("Unsupported primary expression: "+ctx.getText());
+	}
+	
+	@Override
+	public Expression visitArrayCreatorRest(ArrayCreatorRestContext ctx) {
+		if(ctx.getChild(0).toString().equals("[") && ctx.getChild(2).toString().equals("]")) {
+			ExpressionContext size = (ExpressionContext) ctx.getChild(1);
+			return this.visitExpression(size);
+		}
+		else throw new UnsupportedOperationException("Not supported creation of arrays");
 	}
 	
 	@Override

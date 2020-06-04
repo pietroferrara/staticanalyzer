@@ -1,5 +1,6 @@
 package it.unive.dais.staticanalyzer.cfg.statement;
 
+import it.unive.dais.staticanalyzer.cfg.expression.AssignableExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 
@@ -9,7 +10,7 @@ import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
  *
  */
 public class Assignment extends Statement {
-	private VariableIdentifier assigned;
+	private AssignableExpression assigned;
 	private Expression expression;
 
 	/**
@@ -19,7 +20,7 @@ public class Assignment extends Statement {
 	 * @param line the line where the assignment begins
 	 * @param column the column where the assignment begins
 	 */
-	public Assignment(VariableIdentifier left, Expression right, int line, int column) {
+	public Assignment(AssignableExpression left, Expression right, int line, int column) {
 		super(line, column);
 		this.assigned = left;
 		this.expression = right;
@@ -39,7 +40,7 @@ public class Assignment extends Statement {
 	 * 
 	 * @return the assigned variable
 	 */
-	public VariableIdentifier getAssignedVariable() {
+	public AssignableExpression getAssignedVariable() {
 		return assigned;
 	}
 	@Override

@@ -5,7 +5,10 @@ import java.util.Map;
 
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.abstractdomain.generic.FunctionalDomain;
+import it.unive.dais.staticanalyzer.cfg.expression.ArrayAccessExpression;
+import it.unive.dais.staticanalyzer.cfg.expression.AssignableExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
+import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
 import it.unive.dais.staticanalyzer.cfg.statement.SkipStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
@@ -47,10 +50,21 @@ public final class Environment<T extends NonRelationalDomain <T>> extends Functi
 		}
 		if(st instanceof Assignment) {
 			Assignment assignment = (Assignment) st;
-			String assignedVariable = assignment.getAssignedVariable().getName();
-			Map<String, T> map = new HashMap<>(this.function);
-			map.put(assignedVariable, this.valueDomain.eval(assignment.getExpression(), this));
-			return new Environment<>(this.valueDomain, map);
+			AssignableExpression assigned = ((Assignment) st).getAssignedVariable();
+			if(assigned instanceof VariableIdentifier) {
+				String assignedVariable = ((VariableIdentifier) assigned).getName();
+				Map<String, T> map = new HashMap<>(this.function);
+				map.put(assignedVariable, this.valueDomain.eval(assignment.getExpression(), this));
+				return new Environment<>(this.valueDomain, map);
+			}
+			else if(assigned instanceof ArrayAccessExpression) {
+				String assignedVariable = ((ArrayAccessExpression) assigned).getVariableId().getName();
+				Map<String, T> map = new HashMap<>(this.function);
+				T value = this.valueDomain.eval(assignment.getExpression(), this);
+				value = value.lub(this.function.get(assignedVariable));
+				map.put(assignedVariable, value);
+				return new Environment<>(this.valueDomain, map);
+			}
 		}
 		if(st instanceof Expression)
 			return new Environment<>(this.valueDomain, function);

@@ -5,7 +5,7 @@ package it.unive.dais.staticanalyzer.cfg.expression;
  * @author Pietro Ferrara
  *
  */
-public class VariableIdentifier extends Expression {
+public class VariableIdentifier extends AssignableExpression {
 	
 	private final String id;
 

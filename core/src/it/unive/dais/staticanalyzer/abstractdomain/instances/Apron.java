@@ -5,6 +5,7 @@ import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
 import it.unive.dais.staticanalyzer.cfg.Type;
 import it.unive.dais.staticanalyzer.cfg.Type.*;
+import it.unive.dais.staticanalyzer.cfg.expression.AssignableExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.BooleanExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Constant;
@@ -148,7 +149,10 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 			}
 			if(st instanceof Assignment) {
 				Assignment assignment = (Assignment) st;
-				String assignedVariable = assignment.getAssignedVariable().getName();
+				AssignableExpression assigned = assignment.getAssignedVariable();
+				if(! (assigned instanceof VariableIdentifier))
+					throw new UnsupportedOperationException("Only assignment of variables is supported by Apron");
+				String assignedVariable = ((VariableIdentifier) assigned).getName();
 				Var variable = new StringVar(assignedVariable);
 				if(AnalysisConstants.isForget(assignment.getExpression()))
 					return new Apron(state.forgetCopy(manager, variable, false));
