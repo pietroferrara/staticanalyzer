@@ -107,14 +107,14 @@ public class JavaBodyVisitor extends JavaParserBaseVisitor<CFG> {
 			try {
 				CFG condition = this.visitParExpression(ctx.parExpression());
 				CFG thenbranch = this.visitStatement(ctx.statement(0));
-				CFG elsebranch = ctx.statement().size()==2 ? this.visitStatement(ctx.statement(1)) : new CFG(new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex()));
+				CFG elsebranch = ctx.statement().size()==2 ? this.visitStatement(ctx.statement(1)) : new CFG(new SkipStatement(thenbranch.getLastAdded().getLine(), thenbranch.getLastAdded().getColumn()+1));
 				CFG result = new CFG(ctx.start.getLine(), ctx.start.getStartIndex());
 				result.append(condition, null);
 				Statement afterCondition = result.getLastAdded();
 				result.append(thenbranch, true);
 				Statement lastAfterThen = result.getLastAdded();
 				result.append(elsebranch, afterCondition, false);
-				SkipStatement joinStatement = new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex());
+				SkipStatement joinStatement = new SkipStatement(elsebranch.getLastAdded().getLine(), elsebranch.getLastAdded().getColumn()+1);
 				if(! result.getLastAdded().isTerminatingStatement()) 
 					result.append(joinStatement);
 				if(! lastAfterThen.isTerminatingStatement() && elsebranch!=null)
@@ -133,9 +133,9 @@ public class JavaBodyVisitor extends JavaParserBaseVisitor<CFG> {
 				CFG result = new CFG(ctx.start.getLine(), ctx.start.getStartIndex());
 				result.append(condition, null);
 				result.append(body, true);
-				result.append(new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex()));
+				result.append(new SkipStatement(result.getLastAdded().getLine(), result.getLastAdded().getColumn()+1));
 				result.addAndCheckEdge(result.getLastAdded(), condition.getEntryPoint(), null);
-				Statement skip = new SkipStatement(ctx.start.getLine(), ctx.start.getStartIndex());
+				Statement skip = new SkipStatement(result.getLastAdded().getLine(), result.getLastAdded().getColumn()+1);
 				result.append(new CFG(skip), condition.getLastAdded(), false);
 				return result;
 			} catch (ParsingException e) {

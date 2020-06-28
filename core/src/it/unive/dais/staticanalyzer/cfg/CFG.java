@@ -3,8 +3,11 @@ package it.unive.dais.staticanalyzer.cfg;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Set;
+import java.util.TreeSet;
 
 import org.jgrapht.graph.DefaultDirectedWeightedGraph;
 import org.jgrapht.graph.DefaultWeightedEdge;
@@ -40,7 +43,7 @@ public class CFG extends ParsedBlock {
 		this.lastAdded = st;
 	}
 	
-	ArrayList<Statement> getOrderedStatements() {
+	Collection<Statement> getOrderedStatements(Comparator<Statement> comparator) {
 		ArrayList<Statement> prev = new ArrayList<>();
 		ArrayList<Statement> result = new ArrayList<>();
 		result.add(this.entryPoint);
@@ -61,7 +64,12 @@ public class CFG extends ParsedBlock {
 			}
 			lastAdded = added;
 		}
-		return result;
+		if(comparator!=null) {
+			TreeSet<Statement> ts = new TreeSet<Statement>(comparator);
+			ts.addAll(result);
+			return ts;
+		}
+		else return result;
 	}
 
 	

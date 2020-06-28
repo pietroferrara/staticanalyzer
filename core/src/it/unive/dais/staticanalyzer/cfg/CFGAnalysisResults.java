@@ -88,7 +88,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	}
 	
 	private CFGAnalysisResults<T> singleIteration() {
-		Collection<Statement> statements = cfg.getOrderedStatements();
+		Collection<Statement> statements = cfg.getOrderedStatements(AnalysisConstants.statementOrdering);
 		int size = statements.size();
 		logger.fine("# statements:"+size);
 		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();

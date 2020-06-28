@@ -1,7 +1,9 @@
-/*package it.unive.dais.staticanalyzer.abstractdomain.instances;
+package it.unive.dais.staticanalyzer.abstractdomain.instances;
 
 import it.unive.dais.staticanalyzer.abstractdomain.Lattice;
 import it.unive.dais.staticanalyzer.abstractdomain.SemanticDomain;
+import it.unive.dais.staticanalyzer.cfg.expression.ArrayAccessExpression;
+import it.unive.dais.staticanalyzer.cfg.expression.AssignableExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
 import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.expression.IntegerConstant;
@@ -24,7 +26,14 @@ public class IisPositiveDomain implements Lattice<IisPositiveDomain>, SemanticDo
 	public IisPositiveDomain smallStepSemantics(Statement st) {
 		if(st instanceof Assignment) {
 			Assignment ass = (Assignment) st;
-			if(ass.getAssignedVariable().getName().equals("i")) {
+			AssignableExpression assigned = ((Assignment) st).getAssignedVariable();
+			String name;
+			if(assigned instanceof VariableIdentifier)
+				name = ((VariableIdentifier) assigned).getName();
+			else if(assigned instanceof ArrayAccessExpression)
+				name = ((ArrayAccessExpression) assigned).getVariableId().getName();
+			else throw new UnsupportedOperationException("Assigned expression not yet supported");
+			if(name.equals("i")) {
 				Expression expr = ass.getExpression();
 				if(expr instanceof IntegerConstant) {
 					if(((IntegerConstant) expr).getValue() > 0)
@@ -138,4 +147,4 @@ public class IisPositiveDomain implements Lattice<IisPositiveDomain>, SemanticDo
 		return true;
 	}
 
-}*/
+}
