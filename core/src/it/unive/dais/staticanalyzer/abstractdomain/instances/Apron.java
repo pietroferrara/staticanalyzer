@@ -244,18 +244,17 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	}
 	
 	private Tcons1 convertNumericalComparisonToApronFormat(NumericalComparisonExpression expr) {
-		Expression combinedExpr = new BinaryArithmeticExpression(expr.getLeft(), expr.getRight(), "-", expr.getLine(), expr.getColumn()); //Apron supports only "expr <comparison> 0", so we need to move everything on the left sode 
+		Expression combinedExpr = new BinaryArithmeticExpression(expr.getLeft(), expr.getRight(), "-", expr.getLine(), expr.getColumn()); //Apron supports only "expr <comparison> 0", so we need to move everything on the left node 
 		switch(expr.getOperator()) {
 			case "==":
 			case "!=":
 			case ">":
-				// TODO Auto-generated method stub
 			case ">=": return new Tcons1(state.getEnvironment(), convertComparisonOperator(expr.getOperator()), convertExpressionToApronFormat(combinedExpr));
 			//For the other cases Need to revert the operator since Apron has a limited support for comparison operators
 			case "<": combinedExpr = new BinaryArithmeticExpression(new IntegerConstant(0, combinedExpr.getLine(), combinedExpr.getColumn()), combinedExpr, "-", combinedExpr.getLine(), combinedExpr.getColumn());
-				return new Tcons1(state.getEnvironment(), convertComparisonOperator(">="), convertExpressionToApronFormat(combinedExpr));
-			case "<=": combinedExpr = new BinaryArithmeticExpression(new IntegerConstant(0, combinedExpr.getLine(), combinedExpr.getColumn()), combinedExpr, "-", combinedExpr.getLine(), combinedExpr.getColumn());
 				return new Tcons1(state.getEnvironment(), convertComparisonOperator(">"), convertExpressionToApronFormat(combinedExpr));
+			case "<=": combinedExpr = new BinaryArithmeticExpression(new IntegerConstant(0, combinedExpr.getLine(), combinedExpr.getColumn()), combinedExpr, "-", combinedExpr.getLine(), combinedExpr.getColumn());
+				return new Tcons1(state.getEnvironment(), convertComparisonOperator(">="), convertExpressionToApronFormat(combinedExpr));
 			default: throw new UnsupportedOperationException("Comparison operator "+expr.getOperator()+" not yet supported"); 
 		}
 	}
