@@ -4,6 +4,7 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.logging.Logger;
 
@@ -70,6 +71,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	 * @param cfg the control flow graph of the analyzed program
 	 * @param entryState the entry state of the analysis
 	 * @return the result of the analysis
+	 * @throws ParsingException 
 	 */
 	public static <T extends SemanticDomain<T> & Lattice<T>> CFGAnalysisResults<T> computeFixpoint(CFG cfg, AbstractAnalysisState<T> entryState) {
 		CFGAnalysisResults<T> prevIteration = new CFGAnalysisResults<T>(cfg, entryState).singleIteration();
@@ -88,10 +90,16 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 	}
 	
 	private CFGAnalysisResults<T> singleIteration() {
-		Collection<Statement> statements = cfg.getOrderedStatements(AnalysisConstants.statementOrdering);
+		List<Collection<Statement>> statements = cfg.getOrderedStatements(AnalysisConstants.statementOrdering);
+		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();
+		for(Collection<Statement> sts : statements)
+			this.singleIterationOnStatements(sts, poststates);
+		return computeNewPrestatesFromPostStates(poststates);
+	}
+	
+	private Map<Statement, AbstractAnalysisState<T>> singleIterationOnStatements(Collection<Statement> statements, Map<Statement, AbstractAnalysisState<T>> poststates) {
 		int size = statements.size();
 		logger.fine("# statements:"+size);
-		Map<Statement, AbstractAnalysisState<T>> poststates = new HashMap<>();
 		int i = 1;
 		for(Statement st : statements) {
 			if(i%10==0)
@@ -103,7 +111,7 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 			if(state!=null)
 				poststates.put(st, state.smallStepSemantics(st));
 		}
-		return computeNewPrestatesFromPostStates(poststates);
+		return poststates;
 	}
 
 	private CFGAnalysisResults<T> computeNewPrestatesFromPostStates(Map<Statement, AbstractAnalysisState<T>> poststates) {
@@ -177,8 +185,8 @@ public class CFGAnalysisResults<T extends SemanticDomain<T> & Lattice<T>> extend
 
 					@Override
 					public String getName(Statement component) {
-						return "Entry state:\n"+getEntryState(component)+"\n"
-								+component+
+						return "Entry state:\n"+getEntryState(component)+"\n"+
+								"Line "+component.getLine()+" : "+component+
 								"\nExit state:\n"+(getEntryState(component)==null ? "_|_" : getEntryState(component).smallStepSemantics(component));
 					}
 					

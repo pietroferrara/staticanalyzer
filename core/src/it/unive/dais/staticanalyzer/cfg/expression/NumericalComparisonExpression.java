@@ -26,7 +26,7 @@ public class NumericalComparisonExpression extends Expression {
 	
 	@Override
 	public String toString() {
-		return getLeft().toString()+" "+getOperator()+getRight().toString();
+		return getLeft().toString()+" "+getOperator()+" "+getRight().toString();
 	}
 
 	/**

@@ -6,6 +6,8 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.HashSet;
+import java.util.Iterator;
+import java.util.List;
 import java.util.Set;
 import java.util.TreeSet;
 
@@ -16,6 +18,7 @@ import org.jgrapht.io.DOTExporter;
 import org.jgrapht.io.IntegerComponentNameProvider;
 import org.jgrapht.io.StringComponentNameProvider;
 
+import it.unive.dais.staticanalyzer.AnalysisConstants;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 
 /**
@@ -43,12 +46,101 @@ public class CFG extends ParsedBlock {
 		this.lastAdded = st;
 	}
 	
-	Collection<Statement> getOrderedStatements(Comparator<Statement> comparator) {
+	private Statement getNextBreakPoint(Statement initialStatement) {
+		try {
+			Statement nextOne = initialStatement;
+			while(nextOne != null) {
+				if(Math.abs(nextOne.getLine()-initialStatement.getLine())>AnalysisConstants.CFG_LIMIT)
+					return nextOne;
+				Set<DefaultWeightedEdge> outgoingEdges = this.graph.outgoingEdgesOf(nextOne);
+				switch(outgoingEdges.size()) {
+					case 1:
+						DefaultWeightedEdge edge = outgoingEdges.iterator().next();
+						Boolean weight = getBooleanFromWeight(this.graph.getEdgeWeight(edge));
+						if(weight!=null)
+							return null;
+						nextOne = this.graph.getEdgeTarget(edge);
+						break;
+					case 2:
+						Iterator<DefaultWeightedEdge> it = outgoingEdges.iterator();
+						DefaultWeightedEdge left = it.next();
+						DefaultWeightedEdge right = it.next();
+						Boolean weightleft = getBooleanFromWeight(this.graph.getEdgeWeight(left));
+						Boolean weightright = getBooleanFromWeight(this.graph.getEdgeWeight(right));
+						if(weightleft == null || weightright == null || weightleft == weightright)
+							return null;
+						Statement jointPointLeft = getFirstJointPointStartingFrom(this.graph.getEdgeTarget(left));
+						Statement jointPointRight = getFirstJointPointStartingFrom(this.graph.getEdgeTarget(right));
+						if(jointPointLeft!=jointPointRight)
+							return null;
+						nextOne = jointPointLeft;
+						break;
+					default: return null;
+				}
+			}
+			return null;
+		}
+		catch(ParsingException e) {return null;}
+	}
+	
+	private Statement getFirstJointPointStartingFrom(Statement initialStatement) {
+		int tobeDiscarded = 1;
+		Statement next = initialStatement;
+		while(next!=null) {
+			Set<DefaultWeightedEdge> incomingEdges = this.graph.incomingEdgesOf(next);
+			if(incomingEdges.size() == 2) {
+				tobeDiscarded--;
+				if(tobeDiscarded==0)
+					return next;
+			}
+			Set<DefaultWeightedEdge> outgoingEdges = this.graph.outgoingEdgesOf(next);
+			switch(outgoingEdges.size()) {
+				case 1: next = this.graph.getEdgeTarget(outgoingEdges.iterator().next()); break;
+				case 2: tobeDiscarded++;
+					next = this.graph.getEdgeTarget(outgoingEdges.iterator().next()); break;
+				default: return null;
+			}
+		}
+		return null;
+	}
+	private List<Statement> getBreakPoints() {
+		List<Statement> breakPoints = new ArrayList<>();
+		Statement current = this.entryPoint;
+		while(current!=null) {
+			current = this.getNextBreakPoint(current);
+			if(current!=null)
+				breakPoints.add(current);
+		}
+		return breakPoints;
+	}
+	
+	private List<Collection<Statement>> orderedStatements = null;
+	
+	List<Collection<Statement>> getOrderedStatements(Comparator<Statement> comparator) {
+		if(orderedStatements!=null)
+			return orderedStatements;
+		List<Statement> breakPoints = this.getBreakPoints();
+		Statement initial = this.entryPoint;
+		List<Collection<Statement>> result = new ArrayList<>();
+		for(Statement st : breakPoints) {
+			result.add(this.getOrderedStatementsFromAndUpTo(comparator, initial, st));
+			initial = st;
+		}
+		result.add(this.getOrderedStatementsFromAndUpTo(comparator, initial, null));
+		orderedStatements = result;
+		return result;	
+	}
+	
+	/*Collection<Statement> getOrderedStatements(Comparator<Statement> comparator) {
+		return this.getOrderedStatementsFromAndUpTo(comparator, this.entryPoint, null);
+	}*/
+	
+	private Collection<Statement> getOrderedStatementsFromAndUpTo(Comparator<Statement> comparator, Statement from, Statement to) {
 		ArrayList<Statement> prev = new ArrayList<>();
 		ArrayList<Statement> result = new ArrayList<>();
-		result.add(this.entryPoint);
+		result.add(from);
 		Set<Statement> lastAdded = new HashSet<>();
-		lastAdded.add(this.entryPoint);
+		lastAdded.add(from);
 		while(result.size()>prev.size()) {
 			prev = result;
 			result = new ArrayList<>(prev);
@@ -56,7 +148,7 @@ public class CFG extends ParsedBlock {
 			for(Statement st : lastAdded) {
 				for(DefaultWeightedEdge edge : graph.outgoingEdgesOf(st)) {
 					Statement target = graph.getEdgeTarget(edge);
-					if(! prev.contains(target)) {
+					if(! prev.contains(target) && !target.equals(to)) {
 						result.add(target);
 						added.add(target);
 					}
@@ -117,7 +209,7 @@ public class CFG extends ParsedBlock {
 	}
 
 	private boolean isEmpty() {
-		return getEntryPoint() == null && getLastAdded() == null && this.isEmpty();
+		return getEntryPoint() == null && getLastAdded() == null && this.graph.vertexSet().isEmpty() && this.graph.edgeSet().isEmpty();
 	}
 
 	void addAndCheckEdge(Statement from, Statement to, Boolean weight) throws ParsingException {

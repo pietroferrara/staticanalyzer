@@ -17,6 +17,12 @@ public class AnalysisConstants {
 	 */
 	public static int WIDENING_LIMIT = 100;
 	
+	/**
+	 * Number of lines after whom the fixpoint calculation tries to split the program into
+	 * many sequential pieces of code
+	 */
+	public static int CFG_LIMIT = 100;
+	
 	private static String forgetVariable = "random";//Special variable name representing a random value
 
 	/**

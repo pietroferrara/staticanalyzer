@@ -72,6 +72,7 @@ public class TestCasesAnalysis {
 				String summaryresults = cmd.getOptionValue('s');
 				String output = cmd.getOptionValue('o');
 				String widening = cmd.getOptionValue('w');
+				String cfg_splitting= cmd.getOptionValue("cs");
 				String javaTree = cmd.getOptionValue("ti");
 				String jsonAttackerState = cmd.getOptionValue("as");
 				int numberOfPartitions = cmd.hasOption('n') ? Integer.valueOf(cmd.getOptionValue('n')): Integer.MAX_VALUE;
@@ -79,6 +80,9 @@ public class TestCasesAnalysis {
 				Apron.setManager(NumericalDomain.Polka);
 				
 				AnalysisConstants.WIDENING_LIMIT = Integer.parseInt(widening);
+				
+				if(cfg_splitting!=null)
+					AnalysisConstants.CFG_LIMIT = Integer.parseInt(cfg_splitting);
 				
 				CFG cfgTree = readCFG(javaTree);
 
@@ -274,6 +278,7 @@ public class TestCasesAnalysis {
 		Option verbose = Option.builder("v").desc("Print verbose logging").longOpt("verbose").hasArg(false).build();
 		Option summaryresult = Option.builder("s").argName("summary results").desc("File where to dump a text file with all the instances wrongly classified and the total analysis time").longOpt("summaryresults").hasArg(true).required(true).build();
 		Option widening = Option.builder("w").argName("threshold").desc("Threshold before applying widening operators").longOpt("widening").hasArg(true).required(true).build();
+		Option cfg_splitting = Option.builder("cs").argName("LOCs").desc("Number of LOCs after that the fixpoint computation tries to split the CFG into many sequential pieces of code (default: 100)").longOpt("cfgsplitting").hasArg(true).required(false).build();
 		Option attackerModel = Option.builder("a").argName("json file").desc("JSON file with the specification of the attacker").longOpt("attacker").hasArg(true).required(true).build();
 		Option treeImplementation = Option.builder("ti").argName("java file").desc("Java file with the body of the decision tree").longOpt("treeimplementation").hasArg(true).required(true).build();
 		Option joinPartitioning = Option.builder("j").desc("Join trace partitioning").longOpt("join").hasArg(false).build();
@@ -287,6 +292,7 @@ public class TestCasesAnalysis {
 				.addOption(verbose)
 				.addOption(summaryresult)
 				.addOption(widening)
+				.addOption(cfg_splitting)
 				.addOption(attackerModel)
 				.addOption(treeImplementation)
 				.addOption(joinPartitioning)
