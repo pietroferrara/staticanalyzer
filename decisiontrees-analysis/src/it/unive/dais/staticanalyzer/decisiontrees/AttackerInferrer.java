@@ -157,8 +157,8 @@ public class AttackerInferrer {
 	}
 
 	private static String extractTracePartitioningParameter(Attack attack, long budget, int maxPartitions) {
-		//return attack.getLine()+","+(Math.min(maxPartitions, (long) (budget/attack.getCost())));
-		return attack.getLine()+",0";//With the new model we need just to distinguish when we can enter the attack and when not
+		return attack.getLine()+","+(Math.min(maxPartitions, (long) (budget/attack.getCost())));
+		//return attack.getLine()+",1";//With the new model we need just to distinguish when we can enter the attack and when not
 	}
 
 	private static CFG readCFG(String java) throws FileNotFoundException, IOException {
