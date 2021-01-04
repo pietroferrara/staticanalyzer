@@ -14,6 +14,12 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.TreeSet;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.logging.Logger;
 
 import org.apache.commons.cli.CommandLine;
@@ -56,7 +62,7 @@ public class TestCasesAnalysis {
 	
 	private static boolean verbose = false;
 
-	public static void main(String[] args) throws IOException, CsvValidationException, org.json.simple.parser.ParseException {
+	public static void main(String[] args) throws IOException, CsvValidationException, org.json.simple.parser.ParseException, InterruptedException, ExecutionException {
 		CommandLineParser parser = new DefaultParser();
 		try {
 			CommandLine cmd = parser.parse(getOptions(), args);
@@ -76,6 +82,7 @@ public class TestCasesAnalysis {
 				String javaTree = cmd.getOptionValue("ti");
 				String jsonAttackerState = cmd.getOptionValue("as");
 				int numberOfPartitions = cmd.hasOption('n') ? Integer.valueOf(cmd.getOptionValue('n')): Integer.MAX_VALUE;
+				int timeout = cmd.hasOption('t') ? Integer.valueOf(cmd.getOptionValue('t')): Integer.MAX_VALUE;
 				
 				Apron.setManager(NumericalDomain.Polka);
 				
@@ -116,19 +123,29 @@ public class TestCasesAnalysis {
 						if(verbose) logger.info("Beginning the analysis of case "+i);
 						long starttime = System.currentTimeMillis();
 						
-						String resultstring = runSingleAnalysis(vals, numberOfPartitions, attackerModel, cfgTree, dotresults== null ? null : dotresults+File.separator+i+"_tree.dot", attackerState, env, joinPartitioning);
-						boolean result = Boolean.parseBoolean(resultstring.substring(0, resultstring.indexOf('\n')));
-						long totallocaltime = System.currentTimeMillis() - starttime;
-						String toDump = result+System.lineSeparator()+totallocaltime+"\n"+resultstring.substring(resultstring.indexOf('\n'));
-						totaltime += totallocaltime;
-						Files.writeString(check.toPath(), toDump);
-						if(result) {
-							successfull.add(i);
-							if(verbose) logger.info("Row "+i+" correctly classified");
+						Future<String> resultstringfuture = runSingleAnalysis(vals, numberOfPartitions, attackerModel, cfgTree, dotresults== null ? null : dotresults+File.separator+i+"_tree.dot", attackerState, env, joinPartitioning);
+						try {
+							String resultstring = resultstringfuture.get(timeout, TimeUnit.SECONDS);
+							boolean result = Boolean.parseBoolean(resultstring.substring(0, resultstring.indexOf('\n')));
+							long totallocaltime = System.currentTimeMillis() - starttime;
+							String toDump = result+System.lineSeparator()+totallocaltime+"\n"+resultstring.substring(resultstring.indexOf('\n'));
+							totaltime += totallocaltime;
+							Files.writeString(check.toPath(), toDump);
+							if(result) {
+								successfull.add(i);
+								if(verbose) logger.info("Row "+i+" correctly classified");
+							}
+							else {
+								failed.add(i);
+								if(verbose) logger.warning("Row "+i+" wrongly classified");
+							}
 						}
-						else {
+						catch(TimeoutException e) {
+							Files.writeString(check.toPath(), "false\n"+(timeout*1000));
 							failed.add(i);
-							if(verbose) logger.warning("Row "+i+" wrongly classified");
+							totaltime += timeout*1000;
+							if(verbose) logger.warning("Row "+i+" timeouted, and therefore conservatively considered wrongly classified");
+							
 						}
 					}
 				}
@@ -173,69 +190,72 @@ public class TestCasesAnalysis {
 		return new apron.Environment(new String[0], par);
 		//FIXME add other variables, or forget them
 	}
+	
+	private static ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	private static String runSingleAnalysis(List<Double> vals, int numberOfPartitions, Map<Integer, Attack> attackerModel,
+	private static Future<String> runSingleAnalysis(List<Double> vals, int numberOfPartitions, Map<Integer, Attack> attackerModel,
 			CFG cfgTree, String dotresultstree, Map<Map<Integer, Integer>, Lincons1[]>  attackerConstraint, apron.Environment env, boolean join) throws ParseException, IOException {
 
-		
-		long starttime = System.currentTimeMillis();
-		
-		List<Lincons1> constraintsTestCase = new ArrayList<>();
-		
-		for(int i = 1; i <= vals.size(); i++) {
-			String variable;
-			if(i!=vals.size()) {
-				
-				if(attackerModel.containsKey(Integer.valueOf(i)))
-					variable = "x"+i+"_init";
-				else 
-					variable = "x"+i;
-			}
-			else //declare and assign y
-				variable = "y";
-			DoubleScalar[] scalar = new DoubleScalar[env.getSize()];
-			for(int j = 0; j < env.getSize(); j++)
-				scalar[j] = new DoubleScalar(0);
-			scalar[env.dimOfVar(variable)] = new DoubleScalar(1);
-			Lincons1 constraint = new Lincons1(Lincons1.EQ, new Linexpr1(env, scalar, new DoubleScalar(0-vals.get(i-1).doubleValue())), new DoubleScalar(0));
-			constraintsTestCase.add(constraint);
-			if(attackerModel.containsKey(Integer.valueOf(i))) {
-				DoubleScalar[] scalarmin = new DoubleScalar[env.getSize()];
-				DoubleScalar[] scalarmax = new DoubleScalar[env.getSize()];
-				for(int j = 0; j < env.getSize(); j++) {
-					scalarmin[j] = new DoubleScalar(0);
-					scalarmax[j] = new DoubleScalar(0);
+		return executor.submit(() -> {
+			long starttime = System.currentTimeMillis();
+			
+			List<Lincons1> constraintsTestCase = new ArrayList<>();
+			
+			for(int i = 1; i <= vals.size(); i++) {
+				String variable;
+				if(i!=vals.size()) {
+					
+					if(attackerModel.containsKey(Integer.valueOf(i)))
+						variable = "x"+i+"_init";
+					else 
+						variable = "x"+i;
 				}
-				scalarmin[env.dimOfVar("x"+i)] = new DoubleScalar(1);
-				scalarmax[env.dimOfVar("x"+i)] = new DoubleScalar(-1);
-				scalarmin[env.dimOfVar("x"+i+"_min")] = new DoubleScalar(-1);
-				scalarmax[env.dimOfVar("x"+i+"_max")] = new DoubleScalar(1);
-				constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmin, new DoubleScalar(0)), new DoubleScalar(0));
+				else //declare and assign y
+					variable = "y";
+				DoubleScalar[] scalar = new DoubleScalar[env.getSize()];
+				for(int j = 0; j < env.getSize(); j++)
+					scalar[j] = new DoubleScalar(0);
+				scalar[env.dimOfVar(variable)] = new DoubleScalar(1);
+				Lincons1 constraint = new Lincons1(Lincons1.EQ, new Linexpr1(env, scalar, new DoubleScalar(0-vals.get(i-1).doubleValue())), new DoubleScalar(0));
 				constraintsTestCase.add(constraint);
-				constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmax, new DoubleScalar(0)), new DoubleScalar(0));
-				constraintsTestCase.add(constraint);
+				if(attackerModel.containsKey(Integer.valueOf(i))) {
+					DoubleScalar[] scalarmin = new DoubleScalar[env.getSize()];
+					DoubleScalar[] scalarmax = new DoubleScalar[env.getSize()];
+					for(int j = 0; j < env.getSize(); j++) {
+						scalarmin[j] = new DoubleScalar(0);
+						scalarmax[j] = new DoubleScalar(0);
+					}
+					scalarmin[env.dimOfVar("x"+i)] = new DoubleScalar(1);
+					scalarmax[env.dimOfVar("x"+i)] = new DoubleScalar(-1);
+					scalarmin[env.dimOfVar("x"+i+"_min")] = new DoubleScalar(-1);
+					scalarmax[env.dimOfVar("x"+i+"_max")] = new DoubleScalar(1);
+					constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmin, new DoubleScalar(0)), new DoubleScalar(0));
+					constraintsTestCase.add(constraint);
+					constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmax, new DoubleScalar(0)), new DoubleScalar(0));
+					constraintsTestCase.add(constraint);
+				}
 			}
-		}
-		
-		TracePartitioning initialStateForTree = TracePartitioning.createFromLincons1(env, constraintsTestCase, attackerConstraint);
-		
-		AbstractAnalysisState<?> entryState = new AbstractAnalysisState(null,
-				join ? projectTracePartitioningOut(initialStateForTree): initialStateForTree);
-		//We analyze the tree with this state
-		CFGAnalysisResults<?> analysis = 
-				CFGAnalysisResults.computeFixpoint(cfgTree, entryState);
-		if(dotresultstree!=null)
-			analysis.dumpToDotFile(dotresultstree);
-		Collection<Warning> result = JavaCLI.getChecker("AssertChecker").check(analysis);
-		long endtime = System.currentTimeMillis();
-		String stringresult;
-		if(result.size()==0)
-			stringresult="true\n";
-		else if(result.size()==1)
-			stringresult="false\n";
-		else throw new UnsupportedOperationException("Impossible case");
-		stringresult+="Tree analysis time:"+(endtime-starttime)+" msec\n";
-		return stringresult;
+			
+			TracePartitioning initialStateForTree = TracePartitioning.createFromLincons1(env, constraintsTestCase, attackerConstraint);
+			
+			AbstractAnalysisState<?> entryState = new AbstractAnalysisState(null,
+					join ? projectTracePartitioningOut(initialStateForTree): initialStateForTree);
+			//We analyze the tree with this state
+			CFGAnalysisResults<?> analysis = 
+					CFGAnalysisResults.computeFixpoint(cfgTree, entryState);
+			if(dotresultstree!=null)
+				analysis.dumpToDotFile(dotresultstree);
+			Collection<Warning> result = JavaCLI.getChecker("AssertChecker").check(analysis);
+			long endtime = System.currentTimeMillis();
+			String stringresult;
+			if(result.size()==0)
+				stringresult="true\n";
+			else if(result.size()==1)
+				stringresult="false\n";
+			else throw new UnsupportedOperationException("Impossible case");
+			stringresult+="Tree analysis time:"+(endtime-starttime)+" msec\n";
+			return stringresult;
+		});
 	}
 
 	private static <T extends Lattice<T>> Lattice<?> projectTracePartitioningOut(Lattice<?> semanticDomainState) {
@@ -284,6 +304,7 @@ public class TestCasesAnalysis {
 		Option joinPartitioning = Option.builder("j").desc("Join trace partitioning").longOpt("join").hasArg(false).build();
 		Option numberOfPartitions = Option.builder("n").argName("state number").desc("Maximum number of states that a partitioning is allowed to keep").longOpt("numberofstates").hasArg(true).required(false).build();
 		Option attackerstate = Option.builder("as").desc("JSON attacker state").longOpt("attackerstate").hasArg(true).required(true).build();
+		Option timeout = Option.builder("t").argName("timeout (sec)").desc("Timeout in seconds per test case after which the analysis is killed").longOpt("timeout").hasArg(true).required(false).build();
 		
 		return new Options()
 				.addOption(csv)
@@ -297,6 +318,7 @@ public class TestCasesAnalysis {
 				.addOption(treeImplementation)
 				.addOption(joinPartitioning)
 				.addOption(numberOfPartitions)
-				.addOption(attackerstate);
+				.addOption(attackerstate)
+				.addOption(timeout);
 	}
 }
