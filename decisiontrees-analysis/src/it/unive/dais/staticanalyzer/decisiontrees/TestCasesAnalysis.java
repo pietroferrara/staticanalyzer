@@ -62,7 +62,7 @@ public class TestCasesAnalysis {
 	
 	private static boolean verbose = false;
 
-	public static void main(String[] args) throws IOException, CsvValidationException, org.json.simple.parser.ParseException, InterruptedException, ExecutionException {
+	public static void main(String[] args) throws IOException, CsvValidationException, org.json.simple.parser.ParseException, InterruptedException, ExecutionException, TimeoutException {
 		CommandLineParser parser = new DefaultParser();
 		try {
 			CommandLine cmd = parser.parse(getOptions(), args);
@@ -145,7 +145,7 @@ public class TestCasesAnalysis {
 							failed.add(i);
 							totaltime += timeout*1000;
 							if(verbose) logger.warning("Row "+i+" timeouted, and therefore conservatively considered wrongly classified");
-							
+							throw e;
 						}
 					}
 				}
