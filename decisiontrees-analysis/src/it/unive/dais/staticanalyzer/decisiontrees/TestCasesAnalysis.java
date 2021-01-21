@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
@@ -29,13 +30,16 @@ import org.apache.commons.cli.HelpFormatter;
 import org.apache.commons.cli.Option;
 import org.apache.commons.cli.Options;
 import org.apache.commons.cli.ParseException;
-
 import com.opencsv.exceptions.CsvValidationException;
 
+import apron.Coeff;
 import apron.DoubleScalar;
 import apron.Environment;
 import apron.Lincons1;
 import apron.Linexpr1;
+import apron.Linterm1;
+import apron.MpqScalar;
+import apron.Var;
 import it.unive.dais.staticanalyzer.AnalysisConstants;
 import it.unive.dais.staticanalyzer.JavaCLI;
 import it.unive.dais.staticanalyzer.abstractdomain.AbstractAnalysisState;
@@ -48,12 +52,18 @@ import it.unive.dais.staticanalyzer.cfg.CFG;
 import it.unive.dais.staticanalyzer.cfg.CFGAnalysisResults;
 import it.unive.dais.staticanalyzer.cfg.JavaBodyParser;
 import it.unive.dais.staticanalyzer.cfg.Type;
+import it.unive.dais.staticanalyzer.cfg.expression.BinaryArithmeticExpression;
+import it.unive.dais.staticanalyzer.cfg.expression.Constant;
+import it.unive.dais.staticanalyzer.cfg.expression.Expression;
 import it.unive.dais.staticanalyzer.cfg.expression.FloatConstant;
+import it.unive.dais.staticanalyzer.cfg.expression.IntegerConstant;
 import it.unive.dais.staticanalyzer.cfg.expression.VariableIdentifier;
 import it.unive.dais.staticanalyzer.cfg.statement.Assignment;
 import it.unive.dais.staticanalyzer.cfg.statement.ReturnStatement;
 import it.unive.dais.staticanalyzer.cfg.statement.Statement;
 import it.unive.dais.staticanalyzer.cfg.statement.VariableDeclaration;
+import lpsolve.LpSolve;
+import lpsolve.LpSolveException;
 
 public class TestCasesAnalysis {
 
@@ -72,6 +82,7 @@ public class TestCasesAnalysis {
 				if(cmd.hasOption('v'))
 					verbose = true;
 				boolean joinPartitioning = cmd.hasOption('j');
+				boolean inferBudget = cmd.hasOption('b');
 				String csv = cmd.getOptionValue('c');
 				String attacker = cmd.getOptionValue('a');
 				String dotresults = cmd.getOptionValue('r');
@@ -109,43 +120,72 @@ public class TestCasesAnalysis {
 					File check = new File(directory, i+".txt");
 					if(check.exists()) {
 						if(verbose) logger.info("Case "+i+" already processed");
-						List<String> allLines = Files.readAllLines(check.toPath());
-						Boolean result = Boolean.valueOf(allLines.get(0));
-						totaltime+=Long.valueOf(allLines.get(1));
-						if(result==null)
-							throw new ParseException("Previous result stored in file "+check.getAbsolutePath()+" is invalid, it should start with a line containing true or false");
-						if(result.booleanValue())
-							successfull.add(i);
-						else failed.add(i);
+						if(! inferBudget) {
+							List<String> allLines = Files.readAllLines(check.toPath());
+							Boolean result = Boolean.valueOf(allLines.get(0));
+							totaltime+=Long.valueOf(allLines.get(1));
+							if(result==null)
+								throw new ParseException("Previous result stored in file "+check.getAbsolutePath()+" is invalid, it should start with a line containing true or false");
+							if(result.booleanValue())
+								successfull.add(i);
+							else failed.add(i);
+						}
+						else {
+							List<String> allLines = Files.readAllLines(check.toPath());
+							String budget = allLines.get(0);
+							totaltime+=Long.valueOf(allLines.get(1));
+							if(budget==null || "null".equals(budget))
+								failed.add(i);
+							else
+								successfull.add(i);
+						}
 					}
 					else {
 						List<Double> vals = values.get(i);
 						if(verbose) logger.info("Beginning the analysis of case "+i);
 						long starttime = System.currentTimeMillis();
-						
-						Future<String> resultstringfuture = runSingleAnalysis(vals, numberOfPartitions, attackerModel, cfgTree, dotresults== null ? null : dotresults+File.separator+i+"_tree.dot", attackerState, env, joinPartitioning);
-						try {
-							String resultstring = resultstringfuture.get(timeout, TimeUnit.SECONDS);
-							boolean result = Boolean.parseBoolean(resultstring.substring(0, resultstring.indexOf('\n')));
-							long totallocaltime = System.currentTimeMillis() - starttime;
-							String toDump = result+System.lineSeparator()+totallocaltime+"\n"+resultstring.substring(resultstring.indexOf('\n'));
-							totaltime += totallocaltime;
-							Files.writeString(check.toPath(), toDump);
-							if(result) {
-								successfull.add(i);
-								if(verbose) logger.info("Row "+i+" correctly classified");
+						if(! inferBudget) {
+							Future<String> resultstringfuture = runSingleAnalysisTestCase(vals, numberOfPartitions, attackerModel, cfgTree, dotresults== null ? null : dotresults+File.separator+i+"_tree.dot", attackerState, env, joinPartitioning);
+							try {
+								String resultstring = resultstringfuture.get(timeout, TimeUnit.SECONDS);
+								boolean result = Boolean.parseBoolean(resultstring.substring(0, resultstring.indexOf('\n')));
+								long totallocaltime = System.currentTimeMillis() - starttime;
+								String toDump = result+System.lineSeparator()+totallocaltime+"\n"+resultstring.substring(resultstring.indexOf('\n'));
+								totaltime += totallocaltime;
+								Files.writeString(check.toPath(), toDump);
+								if(result) {
+									successfull.add(i);
+									if(verbose) logger.info("Row "+i+" correctly classified");
+								}
+								else {
+									failed.add(i);
+									if(verbose) logger.warning("Row "+i+" wrongly classified");
+								}
 							}
-							else {
+							catch(TimeoutException e) {
+								Files.writeString(check.toPath(), "false\n"+(timeout*1000));
 								failed.add(i);
-								if(verbose) logger.warning("Row "+i+" wrongly classified");
+								totaltime += timeout*1000;
+								if(verbose) logger.warning("Row "+i+" timeouted, and therefore conservatively considered wrongly classified");
+								System.exit(1);
 							}
 						}
-						catch(TimeoutException e) {
-							Files.writeString(check.toPath(), "false\n"+(timeout*1000));
-							failed.add(i);
-							totaltime += timeout*1000;
-							if(verbose) logger.warning("Row "+i+" timeouted, and therefore conservatively considered wrongly classified");
-							throw e;
+						else {
+							Future<String> resultstringfuture = runSingleAnalysisBudget(vals, numberOfPartitions, attackerModel, cfgTree, dotresults== null ? null : dotresults+File.separator+i+"_tree.dot", attackerState, env, joinPartitioning);
+							try {
+								String resultstring = resultstringfuture.get(timeout, TimeUnit.SECONDS);
+								Files.writeString(check.toPath(), resultstring);
+								successfull.add(i);
+								if(verbose) logger.info("Minimal budget of row "+i+":"+resultstring.substring(0, resultstring.indexOf('\n')));
+							}
+							catch(TimeoutException e) {
+								Files.writeString(check.toPath(), "null\n"+(timeout*1000));
+								failed.add(i);
+								totaltime += timeout*1000;
+								if(verbose) logger.warning("Row "+i+" timeouted");
+								System.exit(1);
+							}
+							
 						}
 					}
 				}
@@ -161,6 +201,7 @@ public class TestCasesAnalysis {
 				Path target = new File(summaryresults).toPath();
 				Files.writeString(target, result);
 				logger.info("Textual summary of the results dumped to "+target);
+				System.exit(0);
 			}
 		}
 		catch(ParseException e) {
@@ -186,6 +227,7 @@ public class TestCasesAnalysis {
 				else realVars.add("x"+index);
 			}
 		}
+		realVars.add("budget_init");
 		String[] par = realVars.toArray(new String[realVars.size()]);
 		return new apron.Environment(new String[0], par);
 		//FIXME add other variables, or forget them
@@ -193,56 +235,14 @@ public class TestCasesAnalysis {
 	
 	private static ExecutorService executor = Executors.newSingleThreadExecutor();
 
-	private static Future<String> runSingleAnalysis(List<Double> vals, int numberOfPartitions, Map<Integer, Attack> attackerModel,
+	private static Future<String> runSingleAnalysisTestCase(List<Double> vals, int numberOfPartitions, Map<Integer, Attack> attackerModel,
 			CFG cfgTree, String dotresultstree, Map<Map<Integer, Integer>, Lincons1[]>  attackerConstraint, apron.Environment env, boolean join) throws ParseException, IOException {
 
 		return executor.submit(() -> {
 			long starttime = System.currentTimeMillis();
 			
-			List<Lincons1> constraintsTestCase = new ArrayList<>();
-			
-			for(int i = 1; i <= vals.size(); i++) {
-				String variable;
-				if(i!=vals.size()) {
-					
-					if(attackerModel.containsKey(Integer.valueOf(i)))
-						variable = "x"+i+"_init";
-					else 
-						variable = "x"+i;
-				}
-				else //declare and assign y
-					variable = "y";
-				DoubleScalar[] scalar = new DoubleScalar[env.getSize()];
-				for(int j = 0; j < env.getSize(); j++)
-					scalar[j] = new DoubleScalar(0);
-				scalar[env.dimOfVar(variable)] = new DoubleScalar(1);
-				Lincons1 constraint = new Lincons1(Lincons1.EQ, new Linexpr1(env, scalar, new DoubleScalar(0-vals.get(i-1).doubleValue())), new DoubleScalar(0));
-				constraintsTestCase.add(constraint);
-				if(attackerModel.containsKey(Integer.valueOf(i))) {
-					DoubleScalar[] scalarmin = new DoubleScalar[env.getSize()];
-					DoubleScalar[] scalarmax = new DoubleScalar[env.getSize()];
-					for(int j = 0; j < env.getSize(); j++) {
-						scalarmin[j] = new DoubleScalar(0);
-						scalarmax[j] = new DoubleScalar(0);
-					}
-					scalarmin[env.dimOfVar("x"+i)] = new DoubleScalar(1);
-					scalarmax[env.dimOfVar("x"+i)] = new DoubleScalar(-1);
-					scalarmin[env.dimOfVar("x"+i+"_min")] = new DoubleScalar(-1);
-					scalarmax[env.dimOfVar("x"+i+"_max")] = new DoubleScalar(1);
-					constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmin, new DoubleScalar(0)), new DoubleScalar(0));
-					constraintsTestCase.add(constraint);
-					constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmax, new DoubleScalar(0)), new DoubleScalar(0));
-					constraintsTestCase.add(constraint);
-				}
-			}
-			
-			TracePartitioning initialStateForTree = TracePartitioning.createFromLincons1(env, constraintsTestCase, attackerConstraint);
-			
-			AbstractAnalysisState<?> entryState = new AbstractAnalysisState(null,
-					join ? projectTracePartitioningOut(initialStateForTree): initialStateForTree);
-			//We analyze the tree with this state
-			CFGAnalysisResults<?> analysis = 
-					CFGAnalysisResults.computeFixpoint(cfgTree, entryState);
+			CFGAnalysisResults<?> analysis = computeCFGAnalysisResults(vals, attackerModel, cfgTree, attackerConstraint,
+					env, join);
 			if(dotresultstree!=null)
 				analysis.dumpToDotFile(dotresultstree);
 			Collection<Warning> result = JavaCLI.getChecker("AssertChecker").check(analysis);
@@ -256,6 +256,187 @@ public class TestCasesAnalysis {
 			stringresult+="Tree analysis time:"+(endtime-starttime)+" msec\n";
 			return stringresult;
 		});
+	}
+
+
+	private static Future<String> runSingleAnalysisBudget(List<Double> vals, int numberOfPartitions, Map<Integer, Attack> attackerModel,
+			CFG cfgTree, String dotresultstree, Map<Map<Integer, Integer>, Lincons1[]>  attackerConstraint, apron.Environment env, boolean join) throws ParseException, IOException {
+
+		return executor.submit(() -> {
+			long starttime = System.currentTimeMillis();
+			int expectedClass = vals.get(vals.size()-1).intValue();
+			
+			CFGAnalysisResults<?> analysis = computeCFGAnalysisResults(vals, attackerModel, cfgTree, attackerConstraint,
+					env, join);
+			if(dotresultstree!=null)
+				analysis.dumpToDotFile(dotresultstree);
+			long endtime = System.currentTimeMillis();
+			
+			Collection<AbstractAnalysisState<?>> wrongClassificationStates = extractWrongClassificationStates(analysis, expectedClass);
+			Integer minBudget = null;
+			for(AbstractAnalysisState<?> a : wrongClassificationStates)
+				if(! a.bottom().equals(a)) {
+					Apron state = (Apron) a.getSemanticDomainState();
+					if(! state.bottom().equals(state)) {
+						Lincons1[] constraints = state.getConstraints();
+						Integer budget = computeMinimalBudget(constraints);
+						if(budget!=null) {
+							if(minBudget==null)
+								minBudget = budget;
+							else minBudget = Integer.min(minBudget, budget);
+						}
+					}
+				}
+
+			String stringresult = minBudget+"\n";
+			stringresult+="Tree analysis time:"+(endtime-starttime)+" msec\n";
+			return stringresult;
+		});
+	}
+	
+	private static Integer computeMinimalBudget(Lincons1[] constraints) throws LpSolveException {
+		ArrayList<String> vars = new ArrayList<>();
+		vars.addAll(extractVariables(constraints));
+		LpSolve solver = LpSolve.makeLp(0, vars.size());
+		
+		for(Lincons1 cons : constraints)
+			addConstraints(cons, solver, vars);
+		
+		double[] coefficients = new double[vars.size()];
+		coefficients[vars.indexOf("budget_init")] = 1;
+		solver.setObjFn(coefficients);
+		int result = solver.solve();
+		solver.printLp();
+		int min_budget = (int) solver.getPtrVariables()[vars.indexOf("budget_init")];
+		switch(result) {
+			case LpSolve.INFEASIBLE : return Integer.MAX_VALUE;
+			case LpSolve.OPTIMAL: return Math.max(0, min_budget);
+			default : throw new UnsupportedOperationException("unknown result from the solver");
+		}
+		
+	}
+
+	private static void addConstraints(Lincons1 cons, LpSolve solver, ArrayList<String> vars) throws LpSolveException {
+		double[] coefficients = new double[vars.size()];
+		
+		for(Linterm1 term : cons.getLinterms()) {
+			String variable = term.var.toString();
+			int index = vars.indexOf(variable);
+			if(index < 0)
+				throw new UnsupportedOperationException("Variable in the constraint that is not part of the variables of the state");
+			if(coefficients[index]!=0)
+				throw new UnsupportedOperationException("The same variable is present many times in the same constraint");
+			MpqScalar coefficient = (MpqScalar) term.getCoefficient();
+			coefficients[index] = coefficient.val.doubleValue();
+		}
+		
+		MpqScalar leftPart = (MpqScalar) cons.getCst();
+		double constant = - leftPart.val.doubleValue();
+		int operator = -1;
+		switch(cons.getKind()) {
+			case Lincons1.EQ : operator = LpSolve.EQ; break;
+			case Lincons1.DISEQ : throw new UnsupportedOperationException("Operator not supported");
+			case Lincons1.SUP : operator = LpSolve.GE; break;
+			case Lincons1.SUPEQ : operator = LpSolve.GE; break;
+			case Lincons1.EQMOD : throw new UnsupportedOperationException("Operator not supported");
+			default : throw new UnsupportedOperationException("Operator not supported");
+		}
+		
+		solver.addConstraint(coefficients, operator, constant);
+			
+	}
+
+	private static Collection<String> extractVariables(Lincons1[] constraints) {
+		Set<String> result = new HashSet<>();
+		for(Lincons1 cons : constraints) 
+			for(Linterm1 term : cons.getLinterms()) {
+				Var variable = term.var;
+				if(variable!=null)
+					result.add(variable.toString());
+			}
+		return result;
+	}
+
+	private static Collection<AbstractAnalysisState<?>> extractWrongClassificationStates(CFGAnalysisResults<?> analysis,
+			int expectedClass) {
+		Set<AbstractAnalysisState<?>> result = new HashSet<>();
+		for(Statement st : analysis.getKeys())
+			if(st instanceof Assignment) {
+				Assignment assignment = (Assignment) st;
+				VariableIdentifier var = (VariableIdentifier) assignment.getAssignedVariable();
+				if(var.getName().equals("w")) {
+					Expression assignedExpr = assignment.getExpression();
+					if(assignedExpr instanceof IntegerConstant) {
+						IntegerConstant assignedValue = (IntegerConstant) assignment.getExpression();
+						if(assignedValue.getValue()!=expectedClass)
+							result.add(analysis.getEntryState(st));
+					}
+					else {
+						BinaryArithmeticExpression binaryExpr = (BinaryArithmeticExpression) assignment.getExpression();
+						IntegerConstant leftValue = (IntegerConstant) binaryExpr.getLeft();
+						IntegerConstant rightValue = (IntegerConstant) binaryExpr.getRight();
+						int value;
+						switch(binaryExpr.getOperator()) {
+							case "+" : value = (int) (leftValue.getValue()+rightValue.getValue()); break;
+							case "-" : value = (int) (leftValue.getValue()-rightValue.getValue()); break;
+							default : throw new UnsupportedOperationException("Binary arithmentic operator not yet supported in assignments to classification variable");
+						}
+						if(value!=expectedClass)
+							result.add(analysis.getEntryState(st));
+					}
+				}
+			}
+		return result;
+	}
+
+	private static CFGAnalysisResults<?> computeCFGAnalysisResults(List<Double> vals,
+			Map<Integer, Attack> attackerModel, CFG cfgTree, Map<Map<Integer, Integer>, Lincons1[]> attackerConstraint,
+			apron.Environment env, boolean join) {
+		List<Lincons1> constraintsTestCase = new ArrayList<>();
+		
+		for(int i = 1; i <= vals.size(); i++) {
+			String variable;
+			if(i!=vals.size()) {
+				
+				if(attackerModel.containsKey(Integer.valueOf(i)))
+					variable = "x"+i+"_init";
+				else 
+					variable = "x"+i;
+			}
+			else //declare and assign y
+				variable = "y";
+			DoubleScalar[] scalar = new DoubleScalar[env.getSize()];
+			for(int j = 0; j < env.getSize(); j++)
+				scalar[j] = new DoubleScalar(0);
+			scalar[env.dimOfVar(variable)] = new DoubleScalar(1);
+			Lincons1 constraint = new Lincons1(Lincons1.EQ, new Linexpr1(env, scalar, new DoubleScalar(0-vals.get(i-1).doubleValue())), new DoubleScalar(0));
+			constraintsTestCase.add(constraint);
+			if(attackerModel.containsKey(Integer.valueOf(i))) {
+				DoubleScalar[] scalarmin = new DoubleScalar[env.getSize()];
+				DoubleScalar[] scalarmax = new DoubleScalar[env.getSize()];
+				for(int j = 0; j < env.getSize(); j++) {
+					scalarmin[j] = new DoubleScalar(0);
+					scalarmax[j] = new DoubleScalar(0);
+				}
+				scalarmin[env.dimOfVar("x"+i)] = new DoubleScalar(1);
+				scalarmax[env.dimOfVar("x"+i)] = new DoubleScalar(-1);
+				scalarmin[env.dimOfVar("x"+i+"_min")] = new DoubleScalar(-1);
+				scalarmax[env.dimOfVar("x"+i+"_max")] = new DoubleScalar(1);
+				constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmin, new DoubleScalar(0)), new DoubleScalar(0));
+				constraintsTestCase.add(constraint);
+				constraint = new Lincons1(Lincons1.SUPEQ, new Linexpr1(env, scalarmax, new DoubleScalar(0)), new DoubleScalar(0));
+				constraintsTestCase.add(constraint);
+			}
+		}
+		
+		TracePartitioning initialStateForTree = TracePartitioning.createFromLincons1(env, constraintsTestCase, attackerConstraint);
+		
+		AbstractAnalysisState<?> entryState = new AbstractAnalysisState(null,
+				join ? projectTracePartitioningOut(initialStateForTree): initialStateForTree);
+		//We analyze the tree with this state
+		CFGAnalysisResults<?> analysis = 
+				CFGAnalysisResults.computeFixpoint(cfgTree, entryState);
+		return analysis;
 	}
 
 	private static <T extends Lattice<T>> Lattice<?> projectTracePartitioningOut(Lattice<?> semanticDomainState) {
@@ -305,6 +486,7 @@ public class TestCasesAnalysis {
 		Option numberOfPartitions = Option.builder("n").argName("state number").desc("Maximum number of states that a partitioning is allowed to keep").longOpt("numberofstates").hasArg(true).required(false).build();
 		Option attackerstate = Option.builder("as").desc("JSON attacker state").longOpt("attackerstate").hasArg(true).required(true).build();
 		Option timeout = Option.builder("t").argName("timeout (sec)").desc("Timeout in seconds per test case after which the analysis is killed").longOpt("timeout").hasArg(true).required(false).build();
+		Option budget = Option.builder("b").argName("budget").desc("Tries to find the minimal budget that is enough to missclassify the instances").longOpt("budget").required(false).build();
 		
 		return new Options()
 				.addOption(csv)
@@ -319,6 +501,7 @@ public class TestCasesAnalysis {
 				.addOption(joinPartitioning)
 				.addOption(numberOfPartitions)
 				.addOption(attackerstate)
-				.addOption(timeout);
+				.addOption(timeout)
+				.addOption(budget);
 	}
 }

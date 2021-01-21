@@ -157,7 +157,9 @@ public class AttackerInferrer {
 	}
 
 	private static String extractTracePartitioningParameter(Attack attack, long budget, int maxPartitions) {
-		return attack.getLine()+","+(Math.min(maxPartitions, (long) (budget/attack.getCost())));
+		if(budget==-1)
+			return attack.getLine()+","+maxPartitions;
+		else return attack.getLine()+","+(Math.min(maxPartitions, (long) (budget/attack.getCost())));
 		//return attack.getLine()+",1";//With the new model we need just to distinguish when we can enter the attack and when not
 	}
 

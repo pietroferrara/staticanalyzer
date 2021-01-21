@@ -91,6 +91,10 @@ public class Apron implements SemanticDomain<Apron>, Lattice<Apron> {
 	    PplPoly;
 	}
 	
+	public Lincons1[] getConstraints() throws ApronException {
+		return state.toLincons(manager);
+	}
+	
 	/**
 	 * 
 	 * @param numericalDomain The specific numerical domain used by the analysis.

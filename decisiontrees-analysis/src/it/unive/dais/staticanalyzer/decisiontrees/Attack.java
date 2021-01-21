@@ -97,7 +97,10 @@ public class Attack {
         JSONParser parser = new JSONParser();
         try (Reader reader = new FileReader(attacker)) {
             JSONObject jsonObject = (JSONObject) parser.parse(reader);
-            return Long.parseLong(jsonObject.get("budget").toString());
+            String value = jsonObject.get("budget").toString();
+            if("random".equals(value))
+            	return -1;
+            else return Long.parseLong(jsonObject.get("budget").toString());
         }
 	}
 	
