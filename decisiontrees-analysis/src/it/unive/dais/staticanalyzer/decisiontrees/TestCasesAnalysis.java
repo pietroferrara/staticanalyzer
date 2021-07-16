@@ -9,6 +9,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -310,6 +311,11 @@ public class TestCasesAnalysis {
 		vars.addAll(extractVariables(constraints));
 		LpSolve solver = LpSolve.makeLp(0, vars.size());
 		
+		for(int i = 1; i<=vars.size(); i++) {
+			solver.setLowbo(i, -solver.getInfinite());
+			solver.setColName(i, vars.get(i-1));
+		}
+		
 		for(Lincons1 cons : constraints)
 			addConstraints(cons, solver, vars);
 		
@@ -328,21 +334,33 @@ public class TestCasesAnalysis {
 	}
 
 	private static void addConstraints(Lincons1 cons, LpSolve solver, ArrayList<String> vars) throws LpSolveException {
-		double[] coefficients = new double[vars.size()];
+		double[] coefficients = new double[vars.size()+1];
+		
 		
 		for(Linterm1 term : cons.getLinterms()) {
 			String variable = term.var.toString();
-			int index = vars.indexOf(variable);
-			if(index < 0)
+			int index = vars.indexOf(variable)+1;
+			if(index <= 0)
 				throw new UnsupportedOperationException("Variable in the constraint that is not part of the variables of the state");
 			if(coefficients[index]!=0)
 				throw new UnsupportedOperationException("The same variable is present many times in the same constraint");
 			MpqScalar coefficient = (MpqScalar) term.getCoefficient();
-			coefficients[index] = coefficient.val.doubleValue();
+			coefficients[index] = Double.parseDouble(coefficient.toString());
 		}
 		
+
+		double maxCoefficient = 1;
+		
+		for(double value : coefficients)
+			if(Math.abs(value) > maxCoefficient)
+				maxCoefficient = Math.abs(value);
+		if(maxCoefficient!=1) {
+			for(int i = 0; i<coefficients.length; i++)
+				coefficients[i] = coefficients[i]/maxCoefficient;
+		}
+	
 		MpqScalar leftPart = (MpqScalar) cons.getCst();
-		double constant = - leftPart.val.doubleValue();
+		double constant = - Double.parseDouble(leftPart.toString())/maxCoefficient;
 		int operator = -1;
 		switch(cons.getKind()) {
 			case Lincons1.EQ : operator = LpSolve.EQ; break;
