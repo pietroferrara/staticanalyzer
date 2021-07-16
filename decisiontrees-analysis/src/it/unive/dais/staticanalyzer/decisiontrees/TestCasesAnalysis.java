@@ -92,10 +92,20 @@ public class TestCasesAnalysis {
 				String cfg_splitting= cmd.getOptionValue("cs");
 				String javaTree = cmd.getOptionValue("ti");
 				String jsonAttackerState = cmd.getOptionValue("as");
+				String domain = cmd.getOptionValue("d");
 				int numberOfPartitions = cmd.hasOption('n') ? Integer.valueOf(cmd.getOptionValue('n')): Integer.MAX_VALUE;
 				int timeout = cmd.hasOption('t') ? Integer.valueOf(cmd.getOptionValue('t')): Integer.MAX_VALUE;
-				
-				Apron.setManager(NumericalDomain.Polka);
+				if(domain!=null) {
+					switch(domain) {
+					case "Polka": Apron.setManager(NumericalDomain.Polka);break;
+					case "Octagon": Apron.setManager(NumericalDomain.Octagon);break;
+					case "Box": Apron.setManager(NumericalDomain.Box);break;
+					case "PolkaEq": Apron.setManager(NumericalDomain.PolkaEq);break;
+					default: throw new UnsupportedOperationException("Domain "+domain+" not known");
+					}
+					
+				}
+				else Apron.setManager(NumericalDomain.Polka);
 				
 				AnalysisConstants.WIDENING_LIMIT = Integer.parseInt(widening);
 				
@@ -263,6 +273,7 @@ public class TestCasesAnalysis {
 			CFG cfgTree, String dotresultstree, Map<Map<Integer, Integer>, Lincons1[]>  attackerConstraint, apron.Environment env, boolean join) throws ParseException, IOException {
 
 		return executor.submit(() -> {
+			Apron.setManager(NumericalDomain.Octagon);
 			long starttime = System.currentTimeMillis();
 			int expectedClass = vals.get(vals.size()-1).intValue();
 			
@@ -487,6 +498,7 @@ public class TestCasesAnalysis {
 		Option attackerstate = Option.builder("as").desc("JSON attacker state").longOpt("attackerstate").hasArg(true).required(true).build();
 		Option timeout = Option.builder("t").argName("timeout (sec)").desc("Timeout in seconds per test case after which the analysis is killed").longOpt("timeout").hasArg(true).required(false).build();
 		Option budget = Option.builder("b").argName("budget").desc("Tries to find the minimal budget that is enough to missclassify the instances").longOpt("budget").required(false).build();
+		Option domain = Option.builder("d").argName("numerical abstract domain").desc("Numerical abstract domain to be applied during the analysis").longOpt("domain").hasArg(true).required(false).build();
 		
 		return new Options()
 				.addOption(csv)
@@ -502,6 +514,7 @@ public class TestCasesAnalysis {
 				.addOption(numberOfPartitions)
 				.addOption(attackerstate)
 				.addOption(timeout)
-				.addOption(budget);
+				.addOption(budget)
+				.addOption(domain);
 	}
 }
